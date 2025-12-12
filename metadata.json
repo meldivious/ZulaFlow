@@ -1,0 +1,5 @@
+{
+  "name": "ZulaFlow",
+  "description": "A lightweight, offline-first daily fitness planner and AI coach. No sign-up required, simply organize your workout routine and track progress locally.",
+  "requestFramePermissions": []
+}
