@@ -9,18 +9,29 @@ import { LayoutDashboard, Sparkles, BarChart3, Menu, ArrowRight, UserCircle, Log
 
 const STORAGE_KEY = 'fitflow_data';
 
-// Success Sound (Simple Beep)
+// Success Sound (Web Audio API for reliability)
 const PLAY_SUCCESS_SOUND = () => {
     try {
-        // Standard notification sound (short beep)
-        const audio = new Audio("data:audio/wav;base64,UklGRl9vT1dAVUFMQ3NuZGF0YQ+++++"); 
+        const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+        if (!AudioContext) return;
         
-        // Slightly nicer chime
-        const niceChime = "data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjI5LjEwMAAAAAAAAAAAAAAA//oeAAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAAAFAAAAZwAFCxQfJCsvNTc6QEVIS1BVWV9jZmhscXR4fYGJjpOZnaCkp6uvs7a6vsTMztXa3uHm6e/x9/sAAAAATGF2YzU4LjU0LjEwMAAAAAAAAAAAAAAA//oeWwAAAAAAAGcAAAAAAAAAAACm4j9gAAAAAAAFABAAAGkAAAAAAAAAAA0gAAAAAAABAAAALgAA//oewAAAAAAAABhAAAAAAAAAAAAAAKBiQAABIMKABvf/4viDx/8R/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8";
+        const ctx = new AudioContext();
+        const oscillator = ctx.createOscillator();
+        const gainNode = ctx.createGain();
+
+        oscillator.connect(gainNode);
+        gainNode.connect(ctx.destination);
+
+        // Success chord (C5 - E5) sequence
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(523.25, ctx.currentTime); // C5
+        oscillator.frequency.exponentialRampToValueAtTime(659.25, ctx.currentTime + 0.1); // E5
         
-        const sound = new Audio(niceChime);
-        sound.volume = 0.5;
-        sound.play().catch(e => console.log('Audio play blocked', e));
+        gainNode.gain.setValueAtTime(0.1, ctx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+
+        oscillator.start();
+        oscillator.stop(ctx.currentTime + 0.5);
     } catch (e) {
         console.error("Sound error", e);
     }
@@ -151,7 +162,6 @@ const generateDemoData = (): AppState => {
     ],
     steps: 12543, 
     userName: '',
-    userEmail: '',
     theme: 'dark',
     createClicks: 0,
     cart: [],
@@ -190,7 +200,6 @@ const App: React.FC = () => {
   const [templates, setTemplates] = useState<Template[]>([]);
   const [steps, setSteps] = useState<number>(0);
   const [userName, setUserName] = useState<string>('');
-  const [userEmail, setUserEmail] = useState<string>('');
   const [theme, setTheme] = useState<'light'|'dark'>('dark');
   const [createClicks, setCreateClicks] = useState<number>(0);
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -218,7 +227,6 @@ const App: React.FC = () => {
   const [initialized, setInitialized] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [inputName, setInputName] = useState('');
-  const [inputEmail, setInputEmail] = useState('');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -229,63 +237,8 @@ const App: React.FC = () => {
   const [timerPausedRemaining, setTimerPausedRemaining] = useState<number | null>(null);
   const [showCelebration, setShowCelebration] = useState(false);
 
-  // Touch Handling for Swipe
-  const touchStartRef = useRef<{x: number, y: number} | null>(null);
-  const touchEndRef = useRef<number | null>(null);
-  const minSwipeDistance = 100; // Increased to be less sensitive
-
   // Debounce helper for auto-save
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const onTouchStart = (e: React.TouchEvent) => {
-    touchEndRef.current = null;
-    touchStartRef.current = {
-      x: e.targetTouches[0].clientX,
-      y: e.targetTouches[0].clientY
-    };
-  };
-
-  const onTouchMove = (e: React.TouchEvent) => {
-    if (!touchStartRef.current) return;
-    const currentX = e.targetTouches[0].clientX;
-    const currentY = e.targetTouches[0].clientY;
-    
-    const diffX = Math.abs(currentX - touchStartRef.current.x);
-    const diffY = Math.abs(currentY - touchStartRef.current.y);
-
-    // FIX: Swipe Sensitivity - Stricter Check
-    // Horizontal swipe must be significantly larger than vertical movement (2x)
-    if (diffY * 2 > diffX) {
-        touchEndRef.current = null; // Invalidate swipe
-        return;
-    }
-
-    touchEndRef.current = currentX;
-  };
-
-  const onTouchEnd = () => {
-    if (!touchStartRef.current || !touchEndRef.current) return;
-    const startX = touchStartRef.current.x;
-    const distance = startX - touchEndRef.current;
-    
-    const isLeftSwipe = distance > minSwipeDistance;
-    const isRightSwipe = distance < -minSwipeDistance;
-
-    const tabs: Tab[] = ['dashboard', 'mentor', 'fasting', 'shop', 'stats'];
-    const currentIndex = tabs.indexOf(activeTab);
-
-    if (isLeftSwipe && currentIndex < tabs.length - 1) {
-        setActiveTab(tabs[currentIndex + 1]);
-    }
-
-    if (isRightSwipe && currentIndex > 0) {
-        setActiveTab(tabs[currentIndex - 1]);
-    }
-    
-    // Reset
-    touchStartRef.current = null;
-    touchEndRef.current = null;
-  };
 
   // PWA Install Prompt Listener & OS Detection
   useEffect(() => {
@@ -418,7 +371,6 @@ const App: React.FC = () => {
 
       if (dataToLoad.userName) {
         setUserName(dataToLoad.userName);
-        setUserEmail(dataToLoad.userEmail || '');
       } else {
         setShowOnboarding(true);
       }
@@ -438,7 +390,6 @@ const App: React.FC = () => {
       templates,
       steps,
       userName,
-      userEmail,
       theme,
       lastLogin: getTodayDate(),
       createClicks,
@@ -474,7 +425,7 @@ const App: React.FC = () => {
         }, 1000); // 1 second debounce
     }
 
-  }, [tasks, history, categories, templates, steps, userName, userEmail, theme, createClicks, cart, fastingHistory, activeFast, fastingPresets, weightHistory, notes, initialized, hasStoragePermission, fileHandle]);
+  }, [tasks, history, categories, templates, steps, userName, theme, createClicks, cart, fastingHistory, activeFast, fastingPresets, weightHistory, notes, initialized, hasStoragePermission, fileHandle]);
 
   // Global Timer Check
   useEffect(() => {
@@ -620,7 +571,6 @@ const App: React.FC = () => {
     e.preventDefault();
     if (inputName.trim()) {
       setUserName(inputName.trim());
-      setUserEmail(inputEmail.trim());
       setShowOnboarding(false);
       setIsMenuOpen(false);
     }
@@ -628,7 +578,6 @@ const App: React.FC = () => {
 
   const handleEditName = () => {
     setInputName(userName);
-    setInputEmail(userEmail || '');
     setShowOnboarding(true);
     setIsMenuOpen(false);
   };
@@ -648,7 +597,7 @@ const App: React.FC = () => {
             // Write immediately
             const writable = await handle.createWritable();
             const state: AppState = {
-                tasks, history, categories, templates, steps, userName, userEmail, theme, lastLogin: getTodayDate(), createClicks, cart, fastingHistory, activeFast, fastingPresets, weightHistory, notes, isPro: true, hasStoragePermission: true
+                tasks, history, categories, templates, steps, userName, theme, lastLogin: getTodayDate(), createClicks, cart, fastingHistory, activeFast, fastingPresets, weightHistory, notes, isPro: true, hasStoragePermission: true
             };
             await writable.write(JSON.stringify(state, null, 2));
             await writable.close();
@@ -663,7 +612,7 @@ const App: React.FC = () => {
     } else {
         // Fallback for non-supported browsers
         const state: AppState = {
-            tasks, history, categories, templates, steps, userName, userEmail, theme, lastLogin: getTodayDate(), createClicks, cart, fastingHistory, activeFast, fastingPresets, weightHistory, notes, isPro: true, hasStoragePermission: true
+            tasks, history, categories, templates, steps, userName, theme, lastLogin: getTodayDate(), createClicks, cart, fastingHistory, activeFast, fastingPresets, weightHistory, notes, isPro: true, hasStoragePermission: true
         };
         const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
@@ -697,7 +646,6 @@ const App: React.FC = () => {
           setTemplates(importedData.templates || []);
           setSteps(importedData.steps || 0);
           setUserName(importedData.userName || '');
-          setUserEmail(importedData.userEmail || '');
           setTheme(importedData.theme || 'dark');
           setCreateClicks(importedData.createClicks || 0);
           setCart(importedData.cart || []);
@@ -800,17 +748,6 @@ const App: React.FC = () => {
               />
             </div>
             
-             <div>
-              <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2 uppercase tracking-wide">Email Address (Optional)</label>
-              <input 
-                type="email" 
-                value={inputEmail}
-                onChange={(e) => setInputEmail(e.target.value)}
-                placeholder="you@example.com"
-                className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl p-4 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:border-primary focus:outline-none transition-colors text-lg"
-              />
-            </div>
-
             <button 
               type="submit"
               disabled={!inputName.trim()}
@@ -834,12 +771,7 @@ const App: React.FC = () => {
   }
 
   return (
-    <div 
-        className="min-h-[100dvh] w-full bg-slate-50 dark:bg-[#0f172a] text-slate-900 dark:text-slate-100 font-sans selection:bg-primary selection:text-slate-900 overflow-x-hidden transition-colors duration-300"
-        onTouchStart={onTouchStart}
-        onTouchMove={onTouchMove}
-        onTouchEnd={onTouchEnd}
-    >
+    <div className="min-h-[100dvh] w-full bg-slate-50 dark:bg-[#0f172a] text-slate-900 dark:text-slate-100 font-sans selection:bg-primary selection:text-slate-900 overflow-x-hidden transition-colors duration-300">
       
       {/* Header - Fixed to viewport top */}
       <header className="fixed top-0 left-0 right-0 bg-white/90 dark:bg-[#0f172a]/90 backdrop-blur-md z-50 border-b border-slate-200 dark:border-slate-800 pt-safe transition-all duration-300">
@@ -1004,7 +936,6 @@ const App: React.FC = () => {
              <div className="p-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
                 <p className="text-xs text-slate-500 dark:text-slate-400">Signed in as</p>
                 <p className="font-bold text-slate-900 dark:text-white truncate capitalize text-lg">{formatUserName(userName)}</p>
-                {userEmail && <p className="text-xs text-slate-500 truncate">{userEmail}</p>}
              </div>
 
              <div className="flex-1 overflow-y-auto py-2">
@@ -1078,8 +1009,6 @@ const App: React.FC = () => {
                         setShowOnboarding(true);
                         setUserName('');
                         setInputName('');
-                        setUserEmail('');
-                        setInputEmail('');
                     }}
                     className="w-full text-left px-4 py-3 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl flex items-center gap-3 transition-colors font-bold"
                   >

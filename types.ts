@@ -92,7 +92,6 @@ export interface AppState {
   templates: Template[];
   steps: number;
   userName?: string;
-  userEmail?: string; 
   theme?: 'light' | 'dark';
   createClicks?: number; // Admin analytics
   cart?: CartItem[];

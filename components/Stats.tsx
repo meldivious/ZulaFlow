@@ -39,9 +39,6 @@ const formatK = (num: number) => {
 };
 
 export const Stats: React.FC<StatsProps> = ({ history, categories }) => {
-  const [email, setEmail] = useState('');
-  const [subscribed, setSubscribed] = useState(false);
-
   // Get last 7 days
   const data = history.slice(-7);
   const totalWorkouts = history.length;
@@ -151,17 +148,6 @@ export const Stats: React.FC<StatsProps> = ({ history, categories }) => {
         waterL: Number((water / 1000).toFixed(1)), // Normalized 2000 -> 2.0
     };
   });
-
-  const handleSubscribe = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (email) {
-      setSubscribed(true);
-      setTimeout(() => {
-          setSubscribed(false);
-          setEmail('');
-      }, 3000);
-    }
-  };
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
@@ -378,45 +364,6 @@ export const Stats: React.FC<StatsProps> = ({ history, categories }) => {
                   <div className="py-10 text-center text-slate-500 text-xs">No category data yet</div>
               )}
           </div>
-        </div>
-
-        {/* Email Report Section */}
-        <div className="bg-gradient-to-br from-indigo-50 to-white dark:from-indigo-900/50 dark:to-slate-800 p-6 rounded-2xl border border-indigo-200 dark:border-indigo-500/30 shadow-sm dark:shadow-none">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="bg-indigo-100 dark:bg-indigo-500/20 p-2 rounded-lg">
-              <Mail className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-            </div>
-            <div>
-              <h3 className="text-slate-900 dark:text-white font-bold">Weekly Report</h3>
-              <p className="text-slate-500 dark:text-slate-400 text-xs">Get your 7-day summary via email</p>
-            </div>
-          </div>
-          
-          <form onSubmit={handleSubscribe} className="flex gap-2">
-            <input 
-              type="email" 
-              placeholder="Enter your email" 
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              disabled={subscribed}
-              className="flex-1 bg-white dark:bg-slate-900/50 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-3 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 transition-colors disabled:opacity-50"
-              required
-            />
-            <button 
-              type="submit"
-              disabled={subscribed}
-              className={`px-4 rounded-lg font-bold transition-all ${
-                subscribed 
-                  ? 'bg-green-500 text-white' 
-                  : 'bg-indigo-500 hover:bg-indigo-400 text-white'
-              }`}
-            >
-              {subscribed ? <Check className="w-5 h-5" /> : 'Send'}
-            </button>
-          </form>
-          {subscribed && (
-            <p className="text-green-600 dark:text-green-400 text-xs mt-2 animate-in fade-in">Report scheduled! check your inbox soon.</p>
-          )}
         </div>
       </div>
     </div>

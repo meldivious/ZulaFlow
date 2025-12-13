@@ -101,8 +101,8 @@ const StepTracker = ({ steps, setSteps, readOnly }: { steps: number, setSteps: R
 
   useEffect(() => {
     let lastStepTime = 0;
-    // Increased threshold to filter out small movements more aggressively
-    const threshold = 25; 
+    // Increased threshold to filter out small movements more aggressively (from 25 to 35)
+    const threshold = 35; 
 
     const handleMotion = (event: DeviceMotionEvent) => {
       if (!isTrackingRef.current || readOnly) return;
@@ -112,8 +112,8 @@ const StepTracker = ({ steps, setSteps, readOnly }: { steps: number, setSteps: R
       const acc = Math.sqrt(x*x + y*y + z*z);
       const now = Date.now();
       
-      // Increased debounce time to 500ms
-      if (acc > threshold && (now - lastStepTime) > 500) {
+      // Increased debounce time to 600ms
+      if (acc > threshold && (now - lastStepTime) > 600) {
         setSteps(prev => prev + 1);
         lastStepTime = now;
       }
@@ -1022,7 +1022,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     onChange={(e) => setNewTaskTitle(e.target.value)}
                     placeholder="What's your goal?"
                     className="flex-1 bg-transparent text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 px-3 py-2 text-lg font-medium focus:outline-none min-w-0"
-                    autoFocus
+                    // Removed autoFocus here to prevent keyboard hiding content on mobile
                 />
                 
                 {/* Duration */}
