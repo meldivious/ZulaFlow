@@ -5,33 +5,55 @@ import { Stats } from './components/Stats';
 import { Shop } from './components/Shop';
 import { Fasting } from './components/Fasting';
 import { Tab, Task, AppState, DayLog, Template, CartItem, FastingSession, WeightEntry, NoteEntry, FastingPreset } from './types';
-import { LayoutDashboard, Sparkles, BarChart3, Menu, ArrowRight, UserCircle, LogOut, Download, Upload, Sun, Moon, Clock, ShoppingBag, X, Zap, Smartphone, HardDrive, RefreshCw, Share, Mail } from 'lucide-react';
+import { LayoutDashboard, Sparkles, BarChart3, Menu, ArrowRight, UserCircle, LogOut, Download, Upload, Sun, Moon, Clock, ShoppingBag, X, Zap, Smartphone, HardDrive, RefreshCw, Share } from 'lucide-react';
 
 const STORAGE_KEY = 'fitflow_data';
 
-// Success Sound (Web Audio API for reliability)
+// --- SOUND SYSTEM ---
+// Global context to persist across renders
+let audioContext: AudioContext | null = null;
+
+const initAudio = () => {
+    if (!audioContext) {
+        const AudioCtor = window.AudioContext || (window as any).webkitAudioContext;
+        if (AudioCtor) {
+            audioContext = new AudioCtor();
+        }
+    }
+    // Try to resume if suspended (common browser policy)
+    if (audioContext && audioContext.state === 'suspended') {
+        audioContext.resume().catch(e => console.log("Audio resume failed", e));
+    }
+};
+
 const PLAY_SUCCESS_SOUND = () => {
+    if (!audioContext) initAudio();
+    if (!audioContext) return;
+
     try {
-        const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-        if (!AudioContext) return;
-        
-        const ctx = new AudioContext();
+        const ctx = audioContext;
         const oscillator = ctx.createOscillator();
         const gainNode = ctx.createGain();
 
         oscillator.connect(gainNode);
         gainNode.connect(ctx.destination);
 
-        // Success chord (C5 - E5) sequence
+        // Cheerful major chord arpeggio (C5 - E5 - G5)
+        const now = ctx.currentTime;
         oscillator.type = 'sine';
-        oscillator.frequency.setValueAtTime(523.25, ctx.currentTime); // C5
-        oscillator.frequency.exponentialRampToValueAtTime(659.25, ctx.currentTime + 0.1); // E5
         
-        gainNode.gain.setValueAtTime(0.1, ctx.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+        // Quick frequency ramp up
+        oscillator.frequency.setValueAtTime(523.25, now); // C5
+        oscillator.frequency.linearRampToValueAtTime(659.25, now + 0.1); // E5
+        oscillator.frequency.linearRampToValueAtTime(783.99, now + 0.2); // G5
 
-        oscillator.start();
-        oscillator.stop(ctx.currentTime + 0.5);
+        // Envelope
+        gainNode.gain.setValueAtTime(0, now);
+        gainNode.gain.linearRampToValueAtTime(0.2, now + 0.05);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+
+        oscillator.start(now);
+        oscillator.stop(now + 0.4);
     } catch (e) {
         console.error("Sound error", e);
     }
@@ -77,7 +99,6 @@ const generateDemoData = (): AppState => {
   const dateStr = today.toISOString().split('T')[0];
   const now = new Date().toISOString();
   
-  // Generate last 90 days history for extensive data (300+ completed tasks)
   const history: DayLog[] = Array.from({ length: 90 }).map((_, i) => {
     const d = new Date(today);
     d.setDate(d.getDate() - (90 - i));
@@ -240,6 +261,19 @@ const App: React.FC = () => {
   // Debounce helper for auto-save
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Global Click Listener to unlock Audio
+  useEffect(() => {
+    const handleInteraction = () => {
+        initAudio();
+    };
+    window.addEventListener('click', handleInteraction);
+    window.addEventListener('touchstart', handleInteraction);
+    return () => {
+        window.removeEventListener('click', handleInteraction);
+        window.removeEventListener('touchstart', handleInteraction);
+    };
+  }, []);
+
   // PWA Install Prompt Listener & OS Detection
   useEffect(() => {
     const handleBeforeInstallPrompt = (e: any) => {
@@ -249,12 +283,10 @@ const App: React.FC = () => {
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 
-    // Detect iOS
     const userAgent = window.navigator.userAgent.toLowerCase();
     const isIosDevice = /iphone|ipad|ipod/.test(userAgent);
     setIsIOS(isIosDevice);
 
-    // Detect Standalone (Installed) Mode
     const isStandaloneMode = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone;
     setIsStandalone(isStandaloneMode);
 
@@ -274,7 +306,6 @@ const App: React.FC = () => {
         setIsMenuOpen(false);
       });
     } else if (isIOS) {
-        // Show iOS instructions
         setShowIOSInstall(true);
         setIsMenuOpen(false);
     } else {
@@ -292,7 +323,7 @@ const App: React.FC = () => {
                setViewDate(now);
            }
        }
-    }, 60000); // Check every minute
+    }, 60000); 
     return () => clearInterval(interval);
   }, [currentDate, viewDate]);
 
@@ -403,10 +434,8 @@ const App: React.FC = () => {
       hasStoragePermission
     };
     
-    // 1. Save to LocalStorage (Instant)
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 
-    // 2. Auto-Save to File (Debounced)
     if (fileHandle) {
         if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
         
@@ -415,14 +444,12 @@ const App: React.FC = () => {
                 const writable = await fileHandle.createWritable();
                 await writable.write(JSON.stringify(state, null, 2));
                 await writable.close();
-                console.log("Auto-saved to file");
             } catch (err) {
                 console.error("Auto-save failed", err);
-                // If permission lost, clear handle so we don't spam errors
                 setFileHandle(null);
                 setHasStoragePermission(false);
             }
-        }, 1000); // 1 second debounce
+        }, 1000); 
     }
 
   }, [tasks, history, categories, templates, steps, userName, theme, createClicks, cart, fastingHistory, activeFast, fastingPresets, weightHistory, notes, initialized, hasStoragePermission, fileHandle]);
@@ -488,6 +515,8 @@ const App: React.FC = () => {
   };
 
   const handleToggleTimer = (task: Task) => {
+    // Unlock audio on timer interaction just in case
+    initAudio();
     if (activeTaskId === task.id) {
        if (timerExpiry) {
          const remaining = timerExpiry - Date.now();
@@ -573,6 +602,8 @@ const App: React.FC = () => {
       setUserName(inputName.trim());
       setShowOnboarding(false);
       setIsMenuOpen(false);
+      // Unlock audio on first meaningful interaction
+      initAudio();
     }
   };
 
@@ -582,7 +613,6 @@ const App: React.FC = () => {
     setIsMenuOpen(false);
   };
 
-  // Replaces "Export" with "Enable Auto-Sync" or "Save As"
   const handleSyncFile = async () => {
     if ('showSaveFilePicker' in window) {
         try {
@@ -594,7 +624,6 @@ const App: React.FC = () => {
                 }],
             });
             
-            // Write immediately
             const writable = await handle.createWritable();
             const state: AppState = {
                 tasks, history, categories, templates, steps, userName, theme, lastLogin: getTodayDate(), createClicks, cart, fastingHistory, activeFast, fastingPresets, weightHistory, notes, isPro: true, hasStoragePermission: true
@@ -610,7 +639,6 @@ const App: React.FC = () => {
             console.error("File Save Cancelled or Failed", err);
         }
     } else {
-        // Fallback for non-supported browsers
         const state: AppState = {
             tasks, history, categories, templates, steps, userName, theme, lastLogin: getTodayDate(), createClicks, cart, fastingHistory, activeFast, fastingPresets, weightHistory, notes, isPro: true, hasStoragePermission: true
         };

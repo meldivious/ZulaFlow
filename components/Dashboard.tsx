@@ -51,13 +51,13 @@ const WeekCalendar = ({ viewDate, onDateSelect }: { viewDate: string, onDateSele
   });
 
   return (
-    <div className="flex justify-between items-center bg-white dark:bg-slate-800/50 p-4 rounded-2xl mb-6 shadow-sm dark:shadow-none border border-slate-200 dark:border-slate-700/50 backdrop-blur-sm">
+    <div className="flex justify-between items-center bg-white dark:bg-slate-800/50 p-4 rounded-2xl mb-6 shadow-sm dark:shadow-none border border-slate-200 dark:border-slate-700/50 backdrop-blur-sm overflow-x-auto no-scrollbar">
       {weekDates.map((d, i) => (
         <button 
           key={i} 
           onClick={() => !d.isFuture && onDateSelect(d.fullDate)}
           disabled={d.isFuture}
-          className={`flex flex-col items-center gap-1 focus:outline-none transition-all ${d.isFuture ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer hover:opacity-80'}`}
+          className={`flex flex-col items-center gap-1 focus:outline-none transition-all min-w-[36px] ${d.isFuture ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer hover:opacity-80'}`}
         >
           <span className={`text-[10px] font-bold ${d.isSelected ? 'text-primary dark:text-white' : 'text-slate-400 dark:text-slate-500'}`}>
             {d.day}
@@ -101,8 +101,8 @@ const StepTracker = ({ steps, setSteps, readOnly }: { steps: number, setSteps: R
 
   useEffect(() => {
     let lastStepTime = 0;
-    // Increased threshold to filter out small movements more aggressively (from 25 to 35)
-    const threshold = 35; 
+    // Increased threshold to filter out small movements more aggressively (from 35 to 45)
+    const threshold = 45; 
 
     const handleMotion = (event: DeviceMotionEvent) => {
       if (!isTrackingRef.current || readOnly) return;
@@ -112,8 +112,8 @@ const StepTracker = ({ steps, setSteps, readOnly }: { steps: number, setSteps: R
       const acc = Math.sqrt(x*x + y*y + z*z);
       const now = Date.now();
       
-      // Increased debounce time to 600ms
-      if (acc > threshold && (now - lastStepTime) > 600) {
+      // Increased debounce time to 800ms
+      if (acc > threshold && (now - lastStepTime) > 800) {
         setSteps(prev => prev + 1);
         lastStepTime = now;
       }
@@ -1022,7 +1022,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     onChange={(e) => setNewTaskTitle(e.target.value)}
                     placeholder="What's your goal?"
                     className="flex-1 bg-transparent text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 px-3 py-2 text-lg font-medium focus:outline-none min-w-0"
-                    // Removed autoFocus here to prevent keyboard hiding content on mobile
+                    // removed autoFocus
                 />
                 
                 {/* Duration */}
