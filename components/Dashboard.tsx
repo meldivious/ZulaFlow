@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Task, Template, FastingSession } from '../types';
-import { Plus, Trash2, CheckCircle, Circle, Timer, Play, Pause, Calendar as CalendarIcon, ChevronDown, Footprints, Save, FolderOpen, X, Clock, Flame, Droplets, CalendarClock, Edit2, Repeat, Zap } from 'lucide-react';
-import { VisualTimePicker } from './VisualTimePicker';
+import { Plus, Trash2, CheckCircle, Circle, Timer, Play, Pause, Calendar as CalendarIcon, ChevronDown, Footprints, Save, FolderOpen, X, Clock, Flame, Droplets, CalendarClock, Edit2, Repeat, Zap, ChevronUp } from 'lucide-react';
 import { formatUserName } from '../App';
 
 interface DashboardProps {
@@ -101,9 +100,9 @@ const StepTracker = ({ steps, setSteps, readOnly }: { steps: number, setSteps: R
   }, [readOnly]);
 
   useEffect(() => {
-    let lastAcc = { x: 0, y: 0, z: 0 };
-    const threshold = 12; // Simple threshold
     let lastStepTime = 0;
+    // Increased threshold to filter out small movements more aggressively
+    const threshold = 25; 
 
     const handleMotion = (event: DeviceMotionEvent) => {
       if (!isTrackingRef.current || readOnly) return;
@@ -113,7 +112,8 @@ const StepTracker = ({ steps, setSteps, readOnly }: { steps: number, setSteps: R
       const acc = Math.sqrt(x*x + y*y + z*z);
       const now = Date.now();
       
-      if (acc > threshold && (now - lastStepTime) > 300) {
+      // Increased debounce time to 500ms
+      if (acc > threshold && (now - lastStepTime) > 500) {
         setSteps(prev => prev + 1);
         lastStepTime = now;
       }
@@ -333,18 +333,19 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [categoryMode, setCategoryMode] = useState<'select' | 'create'>('select');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [customCategory, setCustomCategory] = useState('');
-  const [scheduledTime, setScheduledTime] = useState('');
-  const [scheduledDate, setScheduledDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [scheduledDateTime, setScheduledDateTime] = useState('');
   
   const [isRecurring, setIsRecurring] = useState(false);
-  const [showTimePicker, setShowTimePicker] = useState(false);
   const [displayTime, setDisplayTime] = useState(0);
   const [exitingTaskId, setExitingTaskId] = useState<string | null>(null);
   const [showTaskForm, setShowTaskForm] = useState(false);
-  const [showFab, setShowFab] = useState(false);
+  const [showFab, setShowFab] = useState(true); // Default to TRUE to fix "missing" button
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
   
+  // Collapse State for Done
+  const [isDoneExpanded, setIsDoneExpanded] = useState(false);
+
   // Template Modals
   const [showTemplates, setShowTemplates] = useState(false);
   const [showSaveTemplate, setShowSaveTemplate] = useState(false);
@@ -360,31 +361,18 @@ export const Dashboard: React.FC<DashboardProps> = ({
     }
   }, [categories]);
 
-  // Scroll Listener for FAB - Modified for App shell scroll
+  // Scroll Listener for FAB
   useEffect(() => {
-    const scrollContainer = document.getElementById('main-scroll');
     const handleScroll = () => {
-      // Use scrollContainer.scrollTop or window.scrollY if fallback
-      const scrollTop = scrollContainer ? scrollContainer.scrollTop : window.scrollY;
-      if (scrollTop > 100) {
-        setShowFab(true);
-      } else {
-        setShowFab(false);
-      }
+      // Just ensure FAB remains visible. 
+      // If we wanted to hide it on scroll down, we would compare prevScrollY.
+      // For now, always showing it is safer based on user feedback.
+      setShowFab(true);
     };
     
-    if (scrollContainer) {
-        scrollContainer.addEventListener('scroll', handleScroll);
-    } else {
-        window.addEventListener('scroll', handleScroll);
-    }
-    
+    window.addEventListener('scroll', handleScroll);
     return () => {
-        if (scrollContainer) {
-            scrollContainer.removeEventListener('scroll', handleScroll);
-        } else {
-            window.removeEventListener('scroll', handleScroll);
-        }
+        window.removeEventListener('scroll', handleScroll);
     };
   }, []);
 
@@ -502,13 +490,16 @@ export const Dashboard: React.FC<DashboardProps> = ({
     e.preventDefault();
     if (readOnly || !newTaskTitle.trim()) return;
 
-    // Prevent past dates
-    const todayStr = new Date().toISOString().split('T')[0];
-    if (scheduledDate < todayStr) {
-        alert("Cannot schedule tasks for the past.");
-        return;
+    // Split Scheduled Date Time
+    let scheduledDateStr = new Date().toISOString().split('T')[0];
+    let scheduledTimeStr = undefined;
+
+    if (scheduledDateTime) {
+        const d = new Date(scheduledDateTime);
+        scheduledDateStr = d.toISOString().split('T')[0];
+        scheduledTimeStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
     }
-    
+
     incrementCreateClicks();
 
     let finalCategory = '';
@@ -536,8 +527,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
       completed: false,
       category: finalCategory,
       duration: duration,
-      scheduledTime: scheduledTime || undefined,
-      scheduledDate: scheduledDate || undefined,
+      scheduledTime: scheduledTimeStr,
+      scheduledDate: scheduledDateStr,
       createdAt: now.toISOString(),
       recurring: isRecurring
     };
@@ -545,8 +536,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
     setTasks(prev => [...prev, newTask]);
     setNewTaskTitle('');
     setNewTaskDuration('5');
-    setScheduledTime('');
-    setScheduledDate(new Date().toISOString().split('T')[0]); // Reset to today
+    setScheduledDateTime('');
     setIsRecurring(false);
     setCustomCategory('');
     setSelectedCategory(''); 
@@ -631,9 +621,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
     const isEditing = editingTaskId === task.id;
     const isUpcoming = isTaskUpcoming(task);
     
-    // Check if editable (created within 24h)
-    const canEdit = !readOnly && !isCompleted && ((new Date().getTime() - new Date(task.createdAt).getTime()) / (1000 * 60 * 60)) < 24;
-
     let progressWidth = 0;
     if (isActive) {
         const totalDurationSecs = (task.duration || 10) * 60;
@@ -757,19 +744,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
             )}
             
             {!readOnly && (
-               <>
-                {canEdit && !isEditing && (
-                    <button onClick={() => handleStartEdit(task)} className="p-2 text-slate-400 dark:text-slate-500 hover:text-primary transition-colors">
-                        <Edit2 className="w-4 h-4" />
-                    </button>
-                )}
-                <button 
+               <button 
                     onClick={() => deleteTask(task.id)}
                     className="p-2 text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 transition-colors"
                 >
                     <Trash2 className="w-5 h-5" />
                 </button>
-               </>
             )}
           </div>
         </div>
@@ -778,10 +758,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
   };
   
   // Calculate button text based on schedule
-  const isFutureSchedule = scheduledDate > new Date().toISOString().split('T')[0];
+  const isFutureSchedule = scheduledDateTime && new Date(scheduledDateTime) > new Date();
   const isTimerRunning = activeTaskId && timerExpiry;
   const isTimerPaused = activeTaskId && !timerExpiry;
   const hasPending = currentTasks.length > 0;
+
+  // Calculate local ISO string for min date (to support local time)
+  const now = new Date();
+  const minDateTime = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 relative pb-32">
@@ -916,8 +900,16 @@ export const Dashboard: React.FC<DashboardProps> = ({
         
         {/* Empty State / All Done State */}
         {tasks.length === 0 ? (
-          <div className="text-center py-4 text-slate-500 dark:text-slate-500 animate-in fade-in zoom-in-95">
-            {!readOnly && <p className="text-sm opacity-60">Add a task below or ask the AI Mentor!</p>}
+          <div className="text-center py-6 text-slate-500 dark:text-slate-500 animate-in fade-in zoom-in-95">
+            <p className="text-sm opacity-60 mb-4">Add a task below or ask the AI Mentor!</p>
+            {!readOnly && (
+                <button 
+                    onClick={() => setShowTaskForm(true)}
+                    className="bg-primary/10 text-primary border border-primary/20 px-6 py-3 rounded-xl font-bold flex items-center gap-2 mx-auto hover:bg-primary/20 transition-colors"
+                >
+                    <Plus className="w-5 h-5" /> Create Goal
+                </button>
+            )}
           </div>
         ) : activeTasksAll.length === 0 ? (
            <div className="text-center py-6 text-slate-500 dark:text-slate-500 animate-in fade-in zoom-in-95">
@@ -966,11 +958,22 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </div>
         )}
 
-        {/* Done Section */}
+        {/* Done Section - Collapsible */}
         {completedTasks.length > 0 && (
           <div className="space-y-3 pt-4 border-t border-slate-200 dark:border-slate-800 animate-in slide-in-from-top-2">
-             <h3 className="text-sm font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider ml-1">Done</h3>
-             {completedTasks.map(task => renderTaskItem(task, true))}
+             <button 
+                onClick={() => setIsDoneExpanded(!isDoneExpanded)}
+                className="w-full flex justify-between items-center text-sm font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider ml-1 hover:text-slate-600 dark:hover:text-slate-300"
+             >
+                 <span>Done ({completedTasks.length})</span>
+                 {isDoneExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+             </button>
+             
+             {isDoneExpanded && (
+                 <div className="space-y-3 animate-in fade-in slide-in-from-top-1">
+                    {completedTasks.map(task => renderTaskItem(task, true))}
+                 </div>
+             )}
           </div>
         )}
       </div>
@@ -1082,36 +1085,22 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 </div>
             )}
 
-            {/* Row 3: Schedule Section */}
+            {/* Row 3: Schedule Section - NATIVE PICKER WITH PLACEHOLDER STYLE */}
             <div className="flex flex-col gap-2 mt-1">
               <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Schedule</h3>
               <div className="flex items-center gap-2">
-                  
-                  {/* Time Picker */}
-                  <button
-                      type="button"
-                      onClick={() => setShowTimePicker(true)}
-                      className={`flex-1 p-2 rounded-lg border transition-all shrink-0 flex items-center justify-center gap-1 ${
-                          scheduledTime 
-                          ? 'bg-blue-500/10 text-blue-500 border-blue-500/20' 
-                          : 'bg-slate-100 dark:bg-slate-900/50 text-slate-400 border-slate-200 dark:border-slate-700'
-                      }`}
-                  >
-                      <Clock className="w-5 h-5" />
-                      {scheduledTime ? <span className="text-[10px] font-bold">{scheduledTime}</span> : <span className="text-[10px]">Time</span>}
-                  </button>
-
-                  {/* Date Picker */}
-                  <div className="relative flex-1">
+                  <div className="relative w-full">
                       <input 
-                      type="date"
-                      min={new Date().toISOString().split('T')[0]}
-                      value={scheduledDate}
-                      onChange={(e) => setScheduledDate(e.target.value)}
-                      className="w-full p-2 rounded-lg border bg-slate-100 dark:bg-slate-900/50 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 text-xs focus:outline-none focus:border-blue-500 focus:text-slate-900 dark:focus:text-white appearance-none min-h-[34px]"
+                        type="datetime-local"
+                        value={scheduledDateTime}
+                        onChange={(e) => setScheduledDateTime(e.target.value)}
+                        min={minDateTime}
+                        className={`w-full bg-slate-50 dark:bg-slate-800 p-3 rounded-xl text-sm border border-slate-200 dark:border-slate-700 focus:border-blue-500 focus:outline-none ${!scheduledDateTime ? 'text-transparent' : 'text-slate-500 dark:text-slate-300'}`}
                       />
-                      {!scheduledDate && (
-                          <CalendarIcon className="w-4 h-4 absolute top-1/2 left-3 -translate-y-1/2 pointer-events-none text-slate-400" />
+                      {!scheduledDateTime && (
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm pointer-events-none">
+                              Schedule Start (Optional)
+                          </span>
                       )}
                   </div>
               </div>
@@ -1145,17 +1134,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
           </div>
         </form>
-
-        {showTimePicker && (
-            <VisualTimePicker 
-              initialTime={scheduledTime}
-              onTimeSelect={(t) => {
-                  setScheduledTime(t);
-                  setShowTimePicker(false);
-              }}
-              onClose={() => setShowTimePicker(false)}
-            />
-        )}
         </>
       )}
     </div>

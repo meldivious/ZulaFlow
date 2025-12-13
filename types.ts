@@ -100,6 +100,8 @@ export interface AppState {
   fastingPresets?: FastingPreset[];
   weightHistory?: WeightEntry[];
   notes?: NoteEntry[];
+  isPro?: boolean;
+  hasStoragePermission?: boolean;
 }
 
 export type Tab = 'dashboard' | 'mentor' | 'fasting' | 'stats' | 'shop';

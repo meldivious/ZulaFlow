@@ -64,6 +64,10 @@ export const Fasting: React.FC<FastingProps> = ({
   const [weightInput, setWeightInput] = useState('');
   const [noteInput, setNoteInput] = useState('');
 
+  // Calculate local ISO string for min date (to support local time)
+  const now = new Date();
+  const minDateTime = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
+
   // Timer Tick
   useEffect(() => {
     let interval: any;
@@ -313,12 +317,20 @@ export const Fasting: React.FC<FastingProps> = ({
 
                          <div>
                              <label className="text-xs font-bold uppercase text-slate-500 mb-1 flex items-center gap-1"><Calendar className="w-3 h-3" /> Schedule Start (Optional)</label>
-                             <input 
-                                type="datetime-local"
-                                value={scheduleTime}
-                                onChange={e => setScheduleTime(e.target.value)}
-                                className="w-full bg-slate-50 dark:bg-slate-800 p-3 rounded-xl text-sm border border-slate-200 dark:border-slate-700 text-slate-500"
-                             />
+                             <div className="relative w-full">
+                                 <input 
+                                    type="datetime-local"
+                                    value={scheduleTime}
+                                    onChange={e => setScheduleTime(e.target.value)}
+                                    min={minDateTime}
+                                    className={`w-full bg-slate-50 dark:bg-slate-800 p-3 rounded-xl text-sm border border-slate-200 dark:border-slate-700 focus:border-primary focus:outline-none ${!scheduleTime ? 'text-transparent' : 'text-slate-500 dark:text-slate-300'}`}
+                                 />
+                                 {!scheduleTime && (
+                                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm pointer-events-none">
+                                         Start now or pick a time
+                                     </span>
+                                 )}
+                             </div>
                          </div>
 
                          <div className="flex gap-2 pt-2">

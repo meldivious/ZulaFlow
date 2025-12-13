@@ -5,43 +5,59 @@ import { Stats } from './components/Stats';
 import { Shop } from './components/Shop';
 import { Fasting } from './components/Fasting';
 import { Tab, Task, AppState, DayLog, Template, CartItem, FastingSession, WeightEntry, NoteEntry, FastingPreset } from './types';
-import { LayoutDashboard, Sparkles, BarChart3, Menu, ArrowRight, UserCircle, LogOut, Download, Upload, Sun, Moon, Clock, Check, Circle, ShoppingBag, Users, X, Zap } from 'lucide-react';
+import { LayoutDashboard, Sparkles, BarChart3, Menu, ArrowRight, UserCircle, LogOut, Download, Upload, Sun, Moon, Clock, ShoppingBag, X, Zap, Smartphone, HardDrive, RefreshCw, Share } from 'lucide-react';
 
 const STORAGE_KEY = 'fitflow_data';
+
+// Success Sound (Simple Beep)
+const PLAY_SUCCESS_SOUND = () => {
+    try {
+        // Standard notification sound (short beep)
+        const audio = new Audio("data:audio/wav;base64,UklGRl9vT1dAVUFMQ3NuZGF0YQ+++++"); 
+        
+        // Slightly nicer chime
+        const niceChime = "data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjI5LjEwMAAAAAAAAAAAAAAA//oeAAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAAAFAAAAZwAFCxQfJCsvNTc6QEVIS1BVWV9jZmhscXR4fYGJjpOZnaCkp6uvs7a6vsTMztXa3uHm6e/x9/sAAAAATGF2YzU4LjU0LjEwMAAAAAAAAAAAAAAA//oeWwAAAAAAAGcAAAAAAAAAAACm4j9gAAAAAAAFABAAAGkAAAAAAAAAAA0gAAAAAAABAAAALgAA//oewAAAAAAAABhAAAAAAAAAAAAAAKBiQAABIMKABvf/4viDx/8R/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8Q/8";
+        
+        const sound = new Audio(niceChime);
+        sound.volume = 0.5;
+        sound.play().catch(e => console.log('Audio play blocked', e));
+    } catch (e) {
+        console.error("Sound error", e);
+    }
+};
 
 const getTodayDate = () => new Date().toISOString().split('T')[0];
 
 const TASKS_POOL = [
-  { title: 'Morning Stretch', category: 'Flexibility', duration: 10 },
+  { title: 'Morning Stretch', category: 'Fitness', duration: 10 },
   { title: 'Drink Water (500ml)', category: 'Health', duration: 0 },
-  { title: '30 min Jog', category: 'Cardio', duration: 30 },
-  { title: 'Push-ups 3x15', category: 'Strength', duration: 15 },
-  { title: 'Read 10 pages', category: 'Mindfulness', duration: 20 },
-  { title: 'Meditation', category: 'Mindfulness', duration: 10 },
+  { title: '30 min Jog', category: 'Fitness', duration: 30 },
+  { title: 'Push-ups 3x15', category: 'Fitness', duration: 15 },
+  { title: 'Read 10 pages', category: 'Daily Task', duration: 20 },
+  { title: 'Meditation', category: 'Daily Task', duration: 10 },
   { title: 'Protein Shake', category: 'Health', duration: 5 },
-  { title: 'Squats 3x20', category: 'Strength', duration: 10 },
-  { title: 'Plank 2 min', category: 'Strength', duration: 2 },
-  { title: 'Walk the dog', category: 'Cardio', duration: 20 },
-  { title: 'Jump Rope 5 min', category: 'Cardio', duration: 5 },
-  { title: 'Yoga Flow', category: 'Flexibility', duration: 15 },
-  { title: 'No Sugar', category: 'Nutrition', duration: 0 },
-  { title: 'Sleep 8 Hours', category: 'Recovery', duration: 0 },
-  { title: 'Cold Shower', category: 'Recovery', duration: 5 },
-  { title: 'Journaling', category: 'Mindfulness', duration: 10 },
-  { title: 'Lunges 3x12', category: 'Strength', duration: 8 },
-  { title: 'Cycling 10km', category: 'Cardio', duration: 40 },
+  { title: 'Squats 3x20', category: 'Fitness', duration: 10 },
+  { title: 'Plank 2 min', category: 'Fitness', duration: 2 },
+  { title: 'Walk the dog', category: 'Fitness', duration: 20 },
+  { title: 'Jump Rope 5 min', category: 'Fitness', duration: 5 },
+  { title: 'Yoga Flow', category: 'Fitness', duration: 15 },
+  { title: 'No Sugar', category: 'Fasting', duration: 0 },
+  { title: 'Sleep 8 Hours', category: 'Health', duration: 0 },
+  { title: 'Cold Shower', category: 'Health', duration: 5 },
+  { title: 'Journaling', category: 'Daily Task', duration: 10 },
+  { title: 'Lunges 3x12', category: 'Fitness', duration: 8 },
+  { title: 'Cycling 10km', category: 'Fitness', duration: 40 },
   { title: 'Vitamins', category: 'Health', duration: 0 },
-  { title: 'Foam Rolling', category: 'Recovery', duration: 15 }
+  { title: 'Foam Rolling', category: 'Fitness', duration: 15 }
 ];
 
 const DEFAULT_CATEGORIES = [
-  'Cardio', 
-  'Strength', 
-  'Flexibility', 
-  'Mindfulness', 
+  'Fitness',
+  'Fasting',
+  'Daily Task',
   'Health', 
-  'Recovery', 
-  'Nutrition'
+  'Work',
+  'Errands'
 ];
 
 // Demo Data Generator
@@ -128,7 +144,7 @@ const generateDemoData = (): AppState => {
         name: 'Morning Routine',
         tasks: [
             { id: 't1-1', title: 'Drink Water', completed: false, category: 'Health', duration: 1, createdAt: now },
-            { id: 't1-2', title: 'Sun Salutations', completed: false, category: 'Flexibility', duration: 10, createdAt: now }
+            { id: 't1-2', title: 'Sun Salutations', completed: false, category: 'Fitness', duration: 10, createdAt: now }
         ],
         createdAt: new Date().toISOString()
       },
@@ -142,7 +158,9 @@ const generateDemoData = (): AppState => {
     activeFast: null,
     fastingPresets: [],
     weightHistory: [],
-    notes: []
+    notes: [],
+    isPro: true, 
+    hasStoragePermission: false
   };
 };
 
@@ -182,13 +200,22 @@ const App: React.FC = () => {
   const [weightHistory, setWeightHistory] = useState<WeightEntry[]>([]);
   const [notes, setNotes] = useState<NoteEntry[]>([]);
   
+  // Permission & PWA State
+  const [hasStoragePermission, setHasStoragePermission] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isIOS, setIsIOS] = useState(false);
+  const [showIOSInstall, setShowIOSInstall] = useState(false);
+  
+  // File System Handle State (Auto-save)
+  const [fileHandle, setFileHandle] = useState<any>(null);
+  
   // UI State
+  const [currentDate, setCurrentDate] = useState<string>(getTodayDate());
   const [viewDate, setViewDate] = useState<string>(getTodayDate());
   const [initialized, setInitialized] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [inputName, setInputName] = useState('');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [onlineUsers, setOnlineUsers] = useState(128);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -198,20 +225,121 @@ const App: React.FC = () => {
   const [timerPausedRemaining, setTimerPausedRemaining] = useState<number | null>(null);
   const [showCelebration, setShowCelebration] = useState(false);
 
+  // Touch Handling for Swipe
+  const touchStartRef = useRef<{x: number, y: number} | null>(null);
+  const touchEndRef = useRef<number | null>(null);
+  const minSwipeDistance = 50;
+
+  // Debounce helper for auto-save
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    touchEndRef.current = null;
+    touchStartRef.current = {
+      x: e.targetTouches[0].clientX,
+      y: e.targetTouches[0].clientY
+    };
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    if (!touchStartRef.current) return;
+    const currentX = e.targetTouches[0].clientX;
+    const currentY = e.targetTouches[0].clientY;
+    
+    const diffX = Math.abs(currentX - touchStartRef.current.x);
+    const diffY = Math.abs(currentY - touchStartRef.current.y);
+
+    // FIX: Swipe Sensitivity
+    // Only register horizontal swipe if vertical movement is minimal
+    // If vertical movement is significant, user is likely scrolling the page
+    if (diffY > diffX) {
+        touchEndRef.current = null; // Invalidate swipe
+        return;
+    }
+
+    touchEndRef.current = currentX;
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStartRef.current || !touchEndRef.current) return;
+    const startX = touchStartRef.current.x;
+    const distance = startX - touchEndRef.current;
+    
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+
+    const tabs: Tab[] = ['dashboard', 'mentor', 'fasting', 'shop', 'stats'];
+    const currentIndex = tabs.indexOf(activeTab);
+
+    if (isLeftSwipe && currentIndex < tabs.length - 1) {
+        setActiveTab(tabs[currentIndex + 1]);
+    }
+
+    if (isRightSwipe && currentIndex > 0) {
+        setActiveTab(tabs[currentIndex - 1]);
+    }
+    
+    // Reset
+    touchStartRef.current = null;
+    touchEndRef.current = null;
+  };
+
+  // PWA Install Prompt Listener & OS Detection
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: any) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    // Detect iOS
+    const userAgent = window.navigator.userAgent.toLowerCase();
+    const isIosDevice = /iphone|ipad|ipod/.test(userAgent);
+    setIsIOS(isIosDevice);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
+
+  const handleInstallClick = () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then((choiceResult: any) => {
+        if (choiceResult.outcome === 'accepted') {
+          console.log('User accepted the install prompt');
+        }
+        setDeferredPrompt(null);
+        setIsMenuOpen(false);
+      });
+    } else if (isIOS) {
+        // Show iOS instructions
+        setShowIOSInstall(true);
+        setIsMenuOpen(false);
+    } else {
+        alert("App is already installed or your browser doesn't support manual installation. Check your browser menu.");
+    }
+  };
+
+  // Realtime Date Check
+  useEffect(() => {
+    const interval = setInterval(() => {
+       const now = getTodayDate();
+       if (now !== currentDate) {
+           setCurrentDate(now);
+           if (viewDate === currentDate) {
+               setViewDate(now);
+           }
+       }
+    }, 60000); // Check every minute
+    return () => clearInterval(interval);
+  }, [currentDate, viewDate]);
+
   const tasksRef = useRef(tasks);
   useEffect(() => {
     tasksRef.current = tasks;
   }, [tasks]);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-       setOnlineUsers(prev => {
-          const change = Math.floor(Math.random() * 5) - 2; 
-          return Math.max(100, prev + change);
-       });
-    }, 5000);
-    return () => clearInterval(interval);
-  }, []);
 
   useEffect(() => {
     if (theme === 'dark') {
@@ -279,6 +407,8 @@ const App: React.FC = () => {
       setWeightHistory(dataToLoad.weightHistory || []);
       setNotes(dataToLoad.notes || []);
 
+      setHasStoragePermission(dataToLoad.hasStoragePermission || false);
+
       if (dataToLoad.userName) {
         setUserName(dataToLoad.userName);
       } else {
@@ -289,6 +419,7 @@ const App: React.FC = () => {
     setInitialized(true);
   }, []);
 
+  // Save to LocalStorage & Auto-Save to File
   useEffect(() => {
     if (!initialized) return;
 
@@ -307,10 +438,34 @@ const App: React.FC = () => {
       activeFast,
       fastingPresets,
       weightHistory,
-      notes
+      notes,
+      isPro: true,
+      hasStoragePermission
     };
+    
+    // 1. Save to LocalStorage (Instant)
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  }, [tasks, history, categories, templates, steps, userName, theme, createClicks, cart, fastingHistory, activeFast, fastingPresets, weightHistory, notes, initialized]);
+
+    // 2. Auto-Save to File (Debounced)
+    if (fileHandle) {
+        if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+        
+        saveTimeoutRef.current = setTimeout(async () => {
+            try {
+                const writable = await fileHandle.createWritable();
+                await writable.write(JSON.stringify(state, null, 2));
+                await writable.close();
+                console.log("Auto-saved to file");
+            } catch (err) {
+                console.error("Auto-save failed", err);
+                // If permission lost, clear handle so we don't spam errors
+                setFileHandle(null);
+                setHasStoragePermission(false);
+            }
+        }, 1000); // 1 second debounce
+    }
+
+  }, [tasks, history, categories, templates, steps, userName, theme, createClicks, cart, fastingHistory, activeFast, fastingPresets, weightHistory, notes, initialized, hasStoragePermission, fileHandle]);
 
   // Global Timer Check
   useEffect(() => {
@@ -329,6 +484,7 @@ const App: React.FC = () => {
 
   useEffect(() => {
     if (showCelebration) {
+      PLAY_SUCCESS_SOUND(); // Play sound
       const timer = setTimeout(() => {
         setShowCelebration(false);
       }, 3000);
@@ -411,6 +567,8 @@ const App: React.FC = () => {
         createdAt: now.toISOString()
     };
     setTasks(prev => [...prev, newTask]);
+    // Also trigger sound for fun
+    setShowCelebration(true); 
   };
   
   const calculateWaterIntake = () => {
@@ -464,34 +622,49 @@ const App: React.FC = () => {
     setIsMenuOpen(false);
   };
 
-  const handleExport = () => {
-    const state: AppState = {
-      tasks,
-      history,
-      categories,
-      templates,
-      steps,
-      userName,
-      theme,
-      lastLogin: getTodayDate(),
-      createClicks,
-      cart,
-      fastingHistory,
-      activeFast,
-      fastingPresets,
-      weightHistory,
-      notes
-    };
-    const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `fitflow_backup_${getTodayDate()}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    setIsMenuOpen(false);
+  // Replaces "Export" with "Enable Auto-Sync" or "Save As"
+  const handleSyncFile = async () => {
+    if ('showSaveFilePicker' in window) {
+        try {
+            const handle = await (window as any).showSaveFilePicker({
+                suggestedName: 'fitflow_data.json',
+                types: [{
+                    description: 'JSON Files',
+                    accept: { 'application/json': ['.json'] },
+                }],
+            });
+            
+            // Write immediately
+            const writable = await handle.createWritable();
+            const state: AppState = {
+                tasks, history, categories, templates, steps, userName, theme, lastLogin: getTodayDate(), createClicks, cart, fastingHistory, activeFast, fastingPresets, weightHistory, notes, isPro: true, hasStoragePermission: true
+            };
+            await writable.write(JSON.stringify(state, null, 2));
+            await writable.close();
+
+            setFileHandle(handle);
+            setHasStoragePermission(true);
+            alert("Sync Enabled! Your data will now automatically save to this file.");
+            setIsMenuOpen(false);
+        } catch (err) {
+            console.error("File Save Cancelled or Failed", err);
+        }
+    } else {
+        // Fallback for non-supported browsers
+        const state: AppState = {
+            tasks, history, categories, templates, steps, userName, theme, lastLogin: getTodayDate(), createClicks, cart, fastingHistory, activeFast, fastingPresets, weightHistory, notes, isPro: true, hasStoragePermission: true
+        };
+        const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `fitflow_data.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        setIsMenuOpen(false);
+    }
   };
 
   const handleImportClick = () => {
@@ -522,6 +695,7 @@ const App: React.FC = () => {
           setFastingPresets(importedData.fastingPresets || []);
           setWeightHistory(importedData.weightHistory || []);
           setNotes(importedData.notes || []);
+          setHasStoragePermission(importedData.hasStoragePermission || false);
 
           alert('Data imported successfully!');
         }
@@ -535,7 +709,7 @@ const App: React.FC = () => {
   };
 
   const getDateLabel = (dateStr: string) => {
-    const today = new Date();
+    const today = new Date(currentDate);
     today.setHours(0, 0, 0, 0);
     const target = new Date(dateStr);
     target.setHours(0, 0, 0, 0);
@@ -549,7 +723,7 @@ const App: React.FC = () => {
   };
 
   const todayLog: DayLog = {
-    date: getTodayDate(),
+    date: currentDate,
     completedCount: tasks.filter(t => t.completed).length,
     totalCount: tasks.length,
     steps: steps,
@@ -557,12 +731,12 @@ const App: React.FC = () => {
   };
   
   const fullStats = [...history, todayLog];
-  const isToday = viewDate === getTodayDate();
+  const isToday = viewDate === currentDate;
   const historicalLog = !isToday ? history.find(h => h.date === viewDate) : null;
   const displayedTasks = isToday ? tasks : (historicalLog?.tasks || []);
   const displayedSteps = isToday ? steps : (historicalLog?.steps || 0);
 
-  const todayStr = getTodayDate();
+  const todayStr = currentDate;
   const activeTodayTasks = tasks.filter(t => !t.completed && (!t.scheduledDate || t.scheduledDate <= todayStr));
   const completedTodayTasks = tasks.filter(t => t.completed && (!t.scheduledDate || t.scheduledDate <= todayStr));
   const futureTasks = tasks.filter(t => !t.completed && t.scheduledDate && t.scheduledDate > todayStr);
@@ -592,7 +766,7 @@ const App: React.FC = () => {
 
   if (showOnboarding) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-[#0f172a] text-slate-900 dark:text-slate-100 font-sans flex items-center justify-center p-6">
+      <div className="min-h-screen bg-slate-50 dark:bg-[#0f172a] text-slate-900 dark:text-slate-100 font-sans flex items-center justify-center p-6 overflow-hidden">
         <div className="max-w-md w-full animate-in zoom-in-95 duration-500">
           <div className="w-16 h-16 bg-gradient-to-tr from-primary to-emerald-300 rounded-2xl flex items-center justify-center shadow-lg shadow-primary/20 mb-8 mx-auto">
             <span className="font-bold text-slate-900 text-3xl">Z</span>
@@ -621,177 +795,173 @@ const App: React.FC = () => {
               Get Started <ArrowRight className="w-5 h-5" />
             </button>
           </form>
-          
-          {userName && (
-             <button onClick={() => setShowOnboarding(false)} className="w-full mt-4 text-slate-500 hover:text-slate-900 dark:hover:text-white text-sm">Cancel</button>
-          )}
         </div>
       </div>
     );
   }
 
   return (
-    <div className="h-screen w-full bg-slate-50 dark:bg-[#0f172a] text-slate-900 dark:text-slate-100 font-sans selection:bg-primary selection:text-slate-900 overflow-hidden relative transition-colors duration-300">
+    <div 
+        className="min-h-[100dvh] w-full bg-slate-50 dark:bg-[#0f172a] text-slate-900 dark:text-slate-100 font-sans selection:bg-primary selection:text-slate-900 overflow-x-hidden transition-colors duration-300"
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+    >
       
-      {/* Sliding Main Content Wrapper */}
-      <div className={`h-full flex flex-col transition-transform duration-300 ease-in-out ${isMenuOpen ? '-translate-x-64' : 'translate-x-0'}`}>
+      {/* Header - Fixed to viewport top */}
+      <header className="fixed top-0 left-0 right-0 bg-white/90 dark:bg-[#0f172a]/90 backdrop-blur-md z-50 border-b border-slate-200 dark:border-slate-800 pt-safe transition-all duration-300">
+        <div className="max-w-md mx-auto px-4 h-16 flex items-center justify-between relative">
           
-          {/* Header (Part of flow now) */}
-          <header className="bg-white/90 dark:bg-[#0f172a]/90 backdrop-blur-md z-50 border-b border-slate-200 dark:border-slate-800 shrink-0">
-            <div className="max-w-md mx-auto px-4 h-16 flex items-center justify-between relative">
-              
-              <div className="flex items-center gap-2 shrink-0">
-                <div className="w-8 h-8 bg-gradient-to-tr from-primary to-emerald-300 rounded-lg flex items-center justify-center shadow-lg shadow-primary/20">
-                  <span className="font-bold text-slate-900">Z</span>
-                </div>
-                {activeTab !== 'dashboard' && (
-                  <span className="font-bold text-xl text-slate-900 dark:text-white">ZulaFlow</span>
-                )}
-                
-                <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-full border border-slate-200 dark:border-slate-700 ml-2">
-                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                    <span className="text-[10px] font-mono font-bold text-slate-600 dark:text-slate-300">{onlineUsers}</span>
-                    <Users className="w-3 h-3 text-slate-400" />
-                </div>
-              </div>
-
-              {activeTab === 'dashboard' && (
-                <div className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center">
-                   <span className="text-sm font-bold text-slate-900 dark:text-white tracking-wide">{getDateLabel(viewDate)}</span>
-                   {!isToday && (
-                     <span className="text-[10px] text-slate-500">{new Date(viewDate).toLocaleDateString(undefined, {month: 'short', day: 'numeric'})}</span>
-                   )}
-                </div>
-              )}
-
-              <button 
-                onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className={`p-2 rounded-lg transition-colors ${isMenuOpen ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'}`}
-              >
-                <Menu className="w-6 h-6" />
-              </button>
-
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="w-8 h-8 bg-gradient-to-tr from-primary to-emerald-300 rounded-lg flex items-center justify-center shadow-lg shadow-primary/20">
+              <span className="font-bold text-slate-900">Z</span>
             </div>
-          </header>
-
-          <div id="main-scroll" className="flex-1 overflow-y-auto scroll-smooth">
-            <main className="max-w-md mx-auto px-4 pt-4 pb-24">
-                {activeTab === 'dashboard' && (
-                <Dashboard 
-                    userName={userName}
-                    tasks={displayedTasks} 
-                    setTasks={isToday ? setTasks : () => {}} // Read-only for past dates
-                    categories={categories}
-                    onAddCategory={handleAddCategory}
-                    templates={templates}
-                    onSaveTemplate={handleSaveTemplate}
-                    steps={displayedSteps}
-                    setSteps={isToday ? setSteps : () => {}} // Read-only for past dates
-                    activeTaskId={activeTaskId}
-                    timerExpiry={timerExpiry}
-                    timerPausedRemaining={timerPausedRemaining}
-                    onToggleTimer={handleToggleTimer}
-                    viewDate={viewDate}
-                    onDateSelect={setViewDate}
-                    readOnly={!isToday}
-                    showCelebration={showCelebration}
-                    onTaskComplete={handleManualTaskComplete}
-                    incrementCreateClicks={() => setCreateClicks(prev => prev + 1)}
-                    activeFast={activeFast}
-                    onNavigateToFasting={() => setActiveTab('fasting')}
-                />
-                )}
-                {activeTab === 'mentor' && (
-                <AIMentor onAddTasks={handleAddTasks} />
-                )}
-                {activeTab === 'fasting' && (
-                 <Fasting
-                    activeFast={activeFast}
-                    setActiveFast={setActiveFast}
-                    fastingHistory={fastingHistory}
-                    setFastingHistory={setFastingHistory}
-                    fastingPresets={fastingPresets}
-                    setFastingPresets={setFastingPresets}
-                    waterIntake={waterIntake}
-                    onAddWater={handleAddWater}
-                    weightHistory={weightHistory}
-                    setWeightHistory={setWeightHistory}
-                    notes={notes}
-                    setNotes={setNotes}
-                 />
-                )}
-                {activeTab === 'shop' && (
-                <Shop cart={cart} setCart={setCart} />
-                )}
-                {activeTab === 'stats' && (
-                <Stats history={fullStats} categories={categories} />
-                )}
-            </main>
+            {activeTab !== 'dashboard' && (
+              <span className="font-bold text-xl text-slate-900 dark:text-white">ZulaFlow</span>
+            )}
           </div>
 
-          <nav className="bg-white/95 dark:bg-[#0f172a]/95 backdrop-blur-xl border-t border-slate-200 dark:border-slate-800 shrink-0 pb-safe">
-            <div className="max-w-md mx-auto flex justify-around items-center h-16">
-            <button
-                onClick={() => setActiveTab('dashboard')}
-                className={`flex flex-col items-center gap-1 w-full h-full justify-center transition-colors relative ${
-                activeTab === 'dashboard' ? 'text-primary' : 'text-slate-500 dark:text-slate-500 hover:text-slate-900 dark:hover:text-slate-300'
-                }`}
-            >
-                <LayoutDashboard className="w-6 h-6" />
-                <span className="text-[10px] font-medium uppercase tracking-wide">Tasks</span>
-                {TaskBadge}
-            </button>
-            
-            <button
-                onClick={() => setActiveTab('mentor')}
-                className={`flex flex-col items-center gap-1 w-full h-full justify-center transition-colors ${
-                activeTab === 'mentor' ? 'text-primary' : 'text-slate-500 dark:text-slate-500 hover:text-slate-900 dark:hover:text-slate-300'
-                }`}
-            >
-                <Sparkles className="w-6 h-6" />
-                <span className="text-[10px] font-medium uppercase tracking-wide">AI Mentor</span>
-            </button>
-
-            <button
-                onClick={() => setActiveTab('fasting')}
-                className={`flex flex-col items-center gap-1 w-full h-full justify-center transition-colors relative ${
-                activeTab === 'fasting' ? 'text-primary' : 'text-slate-500 dark:text-slate-500 hover:text-slate-900 dark:hover:text-slate-300'
-                }`}
-            >
-                <Zap className="w-6 h-6" />
-                <span className="text-[10px] font-medium uppercase tracking-wide">Fasting</span>
-                {activeFast && (
-                  <div className="absolute top-2 right-1/4 translate-x-1/2 w-2.5 h-2.5 bg-blue-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(59,130,246,0.6)] border border-white dark:border-slate-900 z-10"></div>
+          {activeTab === 'dashboard' && (
+            <div className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center">
+                <span className="text-sm font-bold text-slate-900 dark:text-white tracking-wide">{getDateLabel(viewDate)}</span>
+                {!isToday && (
+                  <span className="text-[10px] text-slate-500">{new Date(viewDate).toLocaleDateString(undefined, {month: 'short', day: 'numeric'})}</span>
                 )}
-            </button>
-
-            <button
-                onClick={() => setActiveTab('shop')}
-                className={`flex flex-col items-center gap-1 w-full h-full justify-center transition-colors relative ${
-                activeTab === 'shop' ? 'text-primary' : 'text-slate-500 dark:text-slate-500 hover:text-slate-900 dark:hover:text-slate-300'
-                }`}
-            >
-                <ShoppingBag className="w-6 h-6" />
-                <span className="text-[10px] font-medium uppercase tracking-wide">Shop</span>
-            </button>
-            
-            <button
-                onClick={() => setActiveTab('stats')}
-                className={`flex flex-col items-center gap-1 w-full h-full justify-center transition-colors ${
-                activeTab === 'stats' ? 'text-primary' : 'text-slate-500 dark:text-slate-500 hover:text-slate-900 dark:hover:text-slate-300'
-                }`}
-            >
-                <BarChart3 className="w-6 h-6" />
-                <span className="text-[10px] font-medium uppercase tracking-wide">Stats</span>
-            </button>
             </div>
-          </nav>
+          )}
 
+          <button 
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            className={`p-2 rounded-lg transition-colors ${isMenuOpen ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'}`}
+          >
+            <Menu className="w-6 h-6" />
+          </button>
+
+        </div>
+      </header>
+
+      {/* Main Scroll Content - Padded for fixed header/footer */}
+      <div id="main-scroll" className="w-full max-w-md mx-auto pt-20 pb-28 px-4 min-h-screen">
+            {activeTab === 'dashboard' && (
+            <Dashboard 
+                userName={userName}
+                tasks={displayedTasks} 
+                setTasks={isToday ? setTasks : () => {}} // Read-only for past dates
+                categories={categories}
+                onAddCategory={handleAddCategory}
+                templates={templates}
+                onSaveTemplate={handleSaveTemplate}
+                steps={displayedSteps}
+                setSteps={isToday ? setSteps : () => {}} // Read-only for past dates
+                activeTaskId={activeTaskId}
+                timerExpiry={timerExpiry}
+                timerPausedRemaining={timerPausedRemaining}
+                onToggleTimer={handleToggleTimer}
+                viewDate={viewDate}
+                onDateSelect={setViewDate}
+                readOnly={!isToday}
+                showCelebration={showCelebration}
+                onTaskComplete={handleManualTaskComplete}
+                incrementCreateClicks={() => setCreateClicks(prev => prev + 1)}
+                activeFast={activeFast}
+                onNavigateToFasting={() => setActiveTab('fasting')}
+            />
+            )}
+            {activeTab === 'mentor' && (
+            <AIMentor 
+                onAddTasks={handleAddTasks} 
+            />
+            )}
+            {activeTab === 'fasting' && (
+                <Fasting
+                activeFast={activeFast}
+                setActiveFast={setActiveFast}
+                fastingHistory={fastingHistory}
+                setFastingHistory={setFastingHistory}
+                fastingPresets={fastingPresets}
+                setFastingPresets={setFastingPresets}
+                waterIntake={waterIntake}
+                onAddWater={handleAddWater}
+                weightHistory={weightHistory}
+                setWeightHistory={setWeightHistory}
+                notes={notes}
+                setNotes={setNotes}
+                />
+            )}
+            {activeTab === 'shop' && (
+            <Shop cart={cart} setCart={setCart} />
+            )}
+            {activeTab === 'stats' && (
+            <Stats 
+                history={fullStats} 
+                categories={categories}
+            />
+            )}
       </div>
 
-      <div className={`fixed top-0 right-0 h-full w-64 bg-white dark:bg-slate-800 shadow-2xl z-[60] transform transition-transform duration-300 ease-in-out ${isMenuOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+      {/* Navigation - Fixed to viewport bottom */}
+      <nav className="fixed bottom-0 left-0 right-0 bg-white/95 dark:bg-[#0f172a]/95 backdrop-blur-xl border-t border-slate-200 dark:border-slate-800 pb-safe z-40">
+        <div className="max-w-md mx-auto flex justify-around items-center h-16">
+        <button
+            onClick={() => setActiveTab('dashboard')}
+            className={`flex flex-col items-center gap-1 w-full h-full justify-center transition-colors relative ${
+            activeTab === 'dashboard' ? 'text-primary' : 'text-slate-500 dark:text-slate-500 hover:text-slate-900 dark:hover:text-slate-300'
+            }`}
+        >
+            <LayoutDashboard className="w-6 h-6" />
+            <span className="text-[10px] font-medium uppercase tracking-wide">Tasks</span>
+            {TaskBadge}
+        </button>
+        
+        <button
+            onClick={() => setActiveTab('mentor')}
+            className={`flex flex-col items-center gap-1 w-full h-full justify-center transition-colors relative ${
+            activeTab === 'mentor' ? 'text-primary' : 'text-slate-500 dark:text-slate-500 hover:text-slate-900 dark:hover:text-slate-300'
+            }`}
+        >
+            <Sparkles className="w-6 h-6" />
+            <span className="text-[10px] font-medium uppercase tracking-wide">AI Mentor</span>
+        </button>
+
+        <button
+            onClick={() => setActiveTab('fasting')}
+            className={`flex flex-col items-center gap-1 w-full h-full justify-center transition-colors relative ${
+            activeTab === 'fasting' ? 'text-primary' : 'text-slate-500 dark:text-slate-500 hover:text-slate-900 dark:hover:text-slate-300'
+            }`}
+        >
+            <Zap className="w-6 h-6" />
+            <span className="text-[10px] font-medium uppercase tracking-wide">Fasting</span>
+            {activeFast && (
+                <div className="absolute top-2 right-1/4 translate-x-1/2 w-2.5 h-2.5 bg-blue-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(59,130,246,0.6)] border border-white dark:border-slate-900 z-10"></div>
+            )}
+        </button>
+
+        <button
+            onClick={() => setActiveTab('shop')}
+            className={`flex flex-col items-center gap-1 w-full h-full justify-center transition-colors relative ${
+            activeTab === 'shop' ? 'text-primary' : 'text-slate-500 dark:text-slate-500 hover:text-slate-900 dark:hover:text-slate-300'
+            }`}
+        >
+            <ShoppingBag className="w-6 h-6" />
+            <span className="text-[10px] font-medium uppercase tracking-wide">Shop</span>
+        </button>
+        
+        <button
+            onClick={() => setActiveTab('stats')}
+            className={`flex flex-col items-center gap-1 w-full h-full justify-center transition-colors relative ${
+            activeTab === 'stats' ? 'text-primary' : 'text-slate-500 dark:text-slate-500 hover:text-slate-900 dark:hover:text-slate-300'
+            }`}
+        >
+            <BarChart3 className="w-6 h-6" />
+            <span className="text-[10px] font-medium uppercase tracking-wide">Stats</span>
+        </button>
+        </div>
+      </nav>
+
+      {/* Menu Drawer */}
+      <div className={`fixed inset-y-0 right-0 w-64 bg-white dark:bg-slate-800 shadow-2xl z-[60] transform transition-transform duration-300 ease-in-out ${isMenuOpen ? 'translate-x-0' : 'translate-x-full'}`}>
           <div className="flex flex-col h-full">
-             <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
+             <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center pt-safe">
                  <h2 className="font-bold text-slate-900 dark:text-white">Menu</h2>
                  <button onClick={() => setIsMenuOpen(false)} className="text-slate-500 hover:text-slate-900 dark:hover:text-white">
                      <X className="w-6 h-6" />
@@ -804,6 +974,16 @@ const App: React.FC = () => {
              </div>
 
              <div className="flex-1 overflow-y-auto py-2">
+                {/* Install Button Logic */}
+                {(deferredPrompt || isIOS) && (
+                    <button 
+                      onClick={handleInstallClick}
+                      className="w-full text-left px-6 py-4 text-sm text-white bg-primary hover:bg-emerald-400 mx-4 rounded-xl flex items-center gap-3 transition-colors mb-4 shadow-lg shadow-primary/20 max-w-[calc(100%-2rem)] font-bold"
+                    >
+                      <Smartphone className="w-5 h-5" /> Install App
+                    </button>
+                )}
+
                 <button 
                     onClick={() => {
                         setTheme(theme === 'dark' ? 'light' : 'dark');
@@ -824,11 +1004,22 @@ const App: React.FC = () => {
 
                   <div className="border-t border-slate-200 dark:border-slate-700 my-2 mx-4"></div>
 
+                  {/* Sync / Export Logic */}
                   <button 
-                    onClick={handleExport}
+                    onClick={handleSyncFile}
                     className="w-full text-left px-6 py-4 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-3 transition-colors"
                   >
-                    <Download className="w-5 h-5" /> Export Data
+                    {fileHandle ? (
+                        <>
+                            <RefreshCw className="w-5 h-5 text-primary animate-spin-slow" /> 
+                            <span className="text-primary font-bold">Auto-Sync On</span>
+                        </>
+                    ) : (
+                        <>
+                            <HardDrive className="w-5 h-5" /> 
+                            {('showSaveFilePicker' in window) ? 'Enable Auto-Sync' : 'Export Data'}
+                        </>
+                    )}
                   </button>
 
                   <button 
@@ -846,7 +1037,7 @@ const App: React.FC = () => {
                   />
              </div>
 
-             <div className="p-4 border-t border-slate-200 dark:border-slate-700">
+             <div className="p-4 border-t border-slate-200 dark:border-slate-700 pb-safe">
                   <button 
                     onClick={() => {
                         setIsMenuOpen(false);
@@ -865,6 +1056,36 @@ const App: React.FC = () => {
       {isMenuOpen && (
         <div className="absolute inset-0 z-50 bg-black/20 backdrop-blur-sm cursor-pointer" onClick={() => setIsMenuOpen(false)} />
       )}
+
+      {/* iOS Install Instruction Modal */}
+      {showIOSInstall && (
+          <div className="fixed inset-0 z-[70] bg-black/80 backdrop-blur-md flex items-end sm:items-center justify-center p-4 animate-in fade-in">
+              <div className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-3xl p-6 relative animate-in slide-in-from-bottom-10">
+                  <button onClick={() => setShowIOSInstall(false)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-900 dark:hover:text-white">
+                      <X className="w-6 h-6" />
+                  </button>
+                  <div className="text-center">
+                      <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                         <Share className="w-8 h-8 text-primary" />
+                      </div>
+                      <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Install on iOS</h3>
+                      <p className="text-slate-500 text-sm mb-6">To install this app on your iPhone or iPad:</p>
+                      
+                      <ol className="text-left text-sm space-y-4 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl">
+                          <li className="flex items-center gap-3">
+                              <span className="w-6 h-6 bg-white dark:bg-slate-700 rounded-full flex items-center justify-center font-bold text-xs shrink-0">1</span>
+                              <span>Tap the <span className="font-bold">Share</span> button in Safari menu bar.</span>
+                          </li>
+                          <li className="flex items-center gap-3">
+                              <span className="w-6 h-6 bg-white dark:bg-slate-700 rounded-full flex items-center justify-center font-bold text-xs shrink-0">2</span>
+                              <span>Scroll down and tap <span className="font-bold">Add to Home Screen</span>.</span>
+                          </li>
+                      </ol>
+                  </div>
+              </div>
+          </div>
+      )}
+
     </div>
   );
 };
