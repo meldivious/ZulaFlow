@@ -1,8 +1,9 @@
-const CACHE_NAME = 'zula-fitfam-v1';
+
+const CACHE_NAME = 'zula-fitflow-v2';
 const urlsToCache = [
-  '/',
-  '/index.html',
-  '/manifest.json'
+  './',
+  './index.html',
+  './manifest.json'
 ];
 
 self.addEventListener('install', (event) => {
