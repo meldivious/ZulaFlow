@@ -91,7 +91,8 @@ export interface AppState {
   categories: string[]; // User defined categories
   templates: Template[];
   steps: number;
-  userName?: string; 
+  userName?: string;
+  userEmail?: string; 
   theme?: 'light' | 'dark';
   createClicks?: number; // Admin analytics
   cart?: CartItem[];

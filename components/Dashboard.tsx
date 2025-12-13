@@ -283,14 +283,15 @@ const WaterTracker = ({ waterIntake, onAddWater, readOnly }: { waterIntake: numb
             {!readOnly && (
                 <form onSubmit={handleSubmit} className="flex items-center gap-2">
                     <div className="relative">
+                        {/* Reduced input width */}
                         <input 
                             type="number" 
                             value={addAmount}
                             onChange={(e) => setAddAmount(e.target.value)}
                             placeholder="250"
-                            className="w-20 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg py-2 pl-3 pr-8 text-sm focus:outline-none focus:border-blue-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            className="w-14 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg py-2 pl-2 pr-6 text-sm focus:outline-none focus:border-blue-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none text-center"
                         />
-                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-slate-400 pointer-events-none">ml</span>
+                        <span className="absolute right-1 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 pointer-events-none">ml</span>
                     </div>
                     <button 
                         type="submit"
@@ -339,7 +340,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [displayTime, setDisplayTime] = useState(0);
   const [exitingTaskId, setExitingTaskId] = useState<string | null>(null);
   const [showTaskForm, setShowTaskForm] = useState(false);
-  const [showFab, setShowFab] = useState(true); // Default to TRUE to fix "missing" button
+  const [showFab, setShowFab] = useState(false); // Default false, controlled by scroll
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
   
@@ -361,13 +362,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
     }
   }, [categories]);
 
-  // Scroll Listener for FAB
+  // Scroll Listener for FAB - Show after 100px
   useEffect(() => {
     const handleScroll = () => {
-      // Just ensure FAB remains visible. 
-      // If we wanted to hide it on scroll down, we would compare prevScrollY.
-      // For now, always showing it is safer based on user feedback.
-      setShowFab(true);
+      if (window.scrollY > 100) {
+          setShowFab(true);
+      } else {
+          setShowFab(false);
+      }
     };
     
     window.addEventListener('scroll', handleScroll);
@@ -659,6 +661,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               )}
             </button>
             
+            {/* Added min-w-0 to prevent text overflow pushing flex container */}
             <div className="flex-1 min-w-0">
               {isEditing ? (
                 <form 
@@ -978,7 +981,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         )}
       </div>
 
-      {/* Floating Action Button (FAB) for Creating Goal */}
+      {/* Floating Action Button (FAB) for Creating Goal - Only visible after scroll */}
       {!readOnly && !showTaskForm && showFab && (
         <div className="fixed bottom-24 right-4 flex items-center gap-3 z-40 animate-in slide-in-from-bottom-5">
             <span className="bg-white/90 dark:bg-slate-800/90 backdrop-blur-md text-slate-900 dark:text-white px-3 py-1.5 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 text-sm font-bold">

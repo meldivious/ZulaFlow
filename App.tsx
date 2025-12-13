@@ -5,7 +5,7 @@ import { Stats } from './components/Stats';
 import { Shop } from './components/Shop';
 import { Fasting } from './components/Fasting';
 import { Tab, Task, AppState, DayLog, Template, CartItem, FastingSession, WeightEntry, NoteEntry, FastingPreset } from './types';
-import { LayoutDashboard, Sparkles, BarChart3, Menu, ArrowRight, UserCircle, LogOut, Download, Upload, Sun, Moon, Clock, ShoppingBag, X, Zap, Smartphone, HardDrive, RefreshCw, Share } from 'lucide-react';
+import { LayoutDashboard, Sparkles, BarChart3, Menu, ArrowRight, UserCircle, LogOut, Download, Upload, Sun, Moon, Clock, ShoppingBag, X, Zap, Smartphone, HardDrive, RefreshCw, Share, Mail } from 'lucide-react';
 
 const STORAGE_KEY = 'fitflow_data';
 
@@ -151,6 +151,7 @@ const generateDemoData = (): AppState => {
     ],
     steps: 12543, 
     userName: '',
+    userEmail: '',
     theme: 'dark',
     createClicks: 0,
     cart: [],
@@ -189,6 +190,7 @@ const App: React.FC = () => {
   const [templates, setTemplates] = useState<Template[]>([]);
   const [steps, setSteps] = useState<number>(0);
   const [userName, setUserName] = useState<string>('');
+  const [userEmail, setUserEmail] = useState<string>('');
   const [theme, setTheme] = useState<'light'|'dark'>('dark');
   const [createClicks, setCreateClicks] = useState<number>(0);
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -205,6 +207,7 @@ const App: React.FC = () => {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isIOS, setIsIOS] = useState(false);
   const [showIOSInstall, setShowIOSInstall] = useState(false);
+  const [isStandalone, setIsStandalone] = useState(false);
   
   // File System Handle State (Auto-save)
   const [fileHandle, setFileHandle] = useState<any>(null);
@@ -215,6 +218,7 @@ const App: React.FC = () => {
   const [initialized, setInitialized] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [inputName, setInputName] = useState('');
+  const [inputEmail, setInputEmail] = useState('');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -228,7 +232,7 @@ const App: React.FC = () => {
   // Touch Handling for Swipe
   const touchStartRef = useRef<{x: number, y: number} | null>(null);
   const touchEndRef = useRef<number | null>(null);
-  const minSwipeDistance = 50;
+  const minSwipeDistance = 100; // Increased to be less sensitive
 
   // Debounce helper for auto-save
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -249,10 +253,9 @@ const App: React.FC = () => {
     const diffX = Math.abs(currentX - touchStartRef.current.x);
     const diffY = Math.abs(currentY - touchStartRef.current.y);
 
-    // FIX: Swipe Sensitivity
-    // Only register horizontal swipe if vertical movement is minimal
-    // If vertical movement is significant, user is likely scrolling the page
-    if (diffY > diffX) {
+    // FIX: Swipe Sensitivity - Stricter Check
+    // Horizontal swipe must be significantly larger than vertical movement (2x)
+    if (diffY * 2 > diffX) {
         touchEndRef.current = null; // Invalidate swipe
         return;
     }
@@ -297,6 +300,10 @@ const App: React.FC = () => {
     const userAgent = window.navigator.userAgent.toLowerCase();
     const isIosDevice = /iphone|ipad|ipod/.test(userAgent);
     setIsIOS(isIosDevice);
+
+    // Detect Standalone (Installed) Mode
+    const isStandaloneMode = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone;
+    setIsStandalone(isStandaloneMode);
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
@@ -411,6 +418,7 @@ const App: React.FC = () => {
 
       if (dataToLoad.userName) {
         setUserName(dataToLoad.userName);
+        setUserEmail(dataToLoad.userEmail || '');
       } else {
         setShowOnboarding(true);
       }
@@ -430,6 +438,7 @@ const App: React.FC = () => {
       templates,
       steps,
       userName,
+      userEmail,
       theme,
       lastLogin: getTodayDate(),
       createClicks,
@@ -465,7 +474,7 @@ const App: React.FC = () => {
         }, 1000); // 1 second debounce
     }
 
-  }, [tasks, history, categories, templates, steps, userName, theme, createClicks, cart, fastingHistory, activeFast, fastingPresets, weightHistory, notes, initialized, hasStoragePermission, fileHandle]);
+  }, [tasks, history, categories, templates, steps, userName, userEmail, theme, createClicks, cart, fastingHistory, activeFast, fastingPresets, weightHistory, notes, initialized, hasStoragePermission, fileHandle]);
 
   // Global Timer Check
   useEffect(() => {
@@ -611,6 +620,7 @@ const App: React.FC = () => {
     e.preventDefault();
     if (inputName.trim()) {
       setUserName(inputName.trim());
+      setUserEmail(inputEmail.trim());
       setShowOnboarding(false);
       setIsMenuOpen(false);
     }
@@ -618,6 +628,7 @@ const App: React.FC = () => {
 
   const handleEditName = () => {
     setInputName(userName);
+    setInputEmail(userEmail || '');
     setShowOnboarding(true);
     setIsMenuOpen(false);
   };
@@ -637,7 +648,7 @@ const App: React.FC = () => {
             // Write immediately
             const writable = await handle.createWritable();
             const state: AppState = {
-                tasks, history, categories, templates, steps, userName, theme, lastLogin: getTodayDate(), createClicks, cart, fastingHistory, activeFast, fastingPresets, weightHistory, notes, isPro: true, hasStoragePermission: true
+                tasks, history, categories, templates, steps, userName, userEmail, theme, lastLogin: getTodayDate(), createClicks, cart, fastingHistory, activeFast, fastingPresets, weightHistory, notes, isPro: true, hasStoragePermission: true
             };
             await writable.write(JSON.stringify(state, null, 2));
             await writable.close();
@@ -652,7 +663,7 @@ const App: React.FC = () => {
     } else {
         // Fallback for non-supported browsers
         const state: AppState = {
-            tasks, history, categories, templates, steps, userName, theme, lastLogin: getTodayDate(), createClicks, cart, fastingHistory, activeFast, fastingPresets, weightHistory, notes, isPro: true, hasStoragePermission: true
+            tasks, history, categories, templates, steps, userName, userEmail, theme, lastLogin: getTodayDate(), createClicks, cart, fastingHistory, activeFast, fastingPresets, weightHistory, notes, isPro: true, hasStoragePermission: true
         };
         const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
@@ -686,6 +697,7 @@ const App: React.FC = () => {
           setTemplates(importedData.templates || []);
           setSteps(importedData.steps || 0);
           setUserName(importedData.userName || '');
+          setUserEmail(importedData.userEmail || '');
           setTheme(importedData.theme || 'dark');
           setCreateClicks(importedData.createClicks || 0);
           setCart(importedData.cart || []);
@@ -787,6 +799,18 @@ const App: React.FC = () => {
                 required
               />
             </div>
+            
+             <div>
+              <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2 uppercase tracking-wide">Email Address (Optional)</label>
+              <input 
+                type="email" 
+                value={inputEmail}
+                onChange={(e) => setInputEmail(e.target.value)}
+                placeholder="you@example.com"
+                className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl p-4 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:border-primary focus:outline-none transition-colors text-lg"
+              />
+            </div>
+
             <button 
               type="submit"
               disabled={!inputName.trim()}
@@ -794,6 +818,15 @@ const App: React.FC = () => {
             >
               Get Started <ArrowRight className="w-5 h-5" />
             </button>
+            {userName && (
+                 <button 
+                    type="button"
+                    onClick={() => { setShowOnboarding(false); setIsMenuOpen(false); }}
+                    className="w-full text-slate-500 text-sm py-2 hover:text-slate-900 dark:hover:text-white"
+                 >
+                     Cancel
+                 </button>
+            )}
           </form>
         </div>
       </div>
@@ -971,11 +1004,12 @@ const App: React.FC = () => {
              <div className="p-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
                 <p className="text-xs text-slate-500 dark:text-slate-400">Signed in as</p>
                 <p className="font-bold text-slate-900 dark:text-white truncate capitalize text-lg">{formatUserName(userName)}</p>
+                {userEmail && <p className="text-xs text-slate-500 truncate">{userEmail}</p>}
              </div>
 
              <div className="flex-1 overflow-y-auto py-2">
-                {/* Install Button Logic */}
-                {(deferredPrompt || isIOS) && (
+                {/* Install Button Logic - Hidden if already in PWA/Standalone mode */}
+                {((deferredPrompt || isIOS) && !isStandalone) && (
                     <button 
                       onClick={handleInstallClick}
                       className="w-full text-left px-6 py-4 text-sm text-white bg-primary hover:bg-emerald-400 mx-4 rounded-xl flex items-center gap-3 transition-colors mb-4 shadow-lg shadow-primary/20 max-w-[calc(100%-2rem)] font-bold"
@@ -1044,10 +1078,12 @@ const App: React.FC = () => {
                         setShowOnboarding(true);
                         setUserName('');
                         setInputName('');
+                        setUserEmail('');
+                        setInputEmail('');
                     }}
                     className="w-full text-left px-4 py-3 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl flex items-center gap-3 transition-colors font-bold"
                   >
-                    <LogOut className="w-5 h-5" /> Reset Data
+                    <LogOut className="w-5 h-5" /> Log Out
                   </button>
              </div>
           </div>
