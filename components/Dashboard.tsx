@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Task, Template, FastingSession, FastingPreset, FastingPlanType } from '../types';
-import { Plus, Trash2, CheckCircle, Circle, Timer, Play, Pause, Calendar as CalendarIcon, ChevronDown, Footprints, Save, FolderOpen, X, Clock, Flame, Droplets, CalendarClock, Edit2, Repeat, Zap, ChevronUp, Dumbbell, CheckSquare, ArrowLeft, MoreHorizontal } from 'lucide-react';
+import { Plus, Trash2, CheckCircle, Circle, Timer, Play, Pause, Calendar as CalendarIcon, ChevronDown, Footprints, Save, FolderOpen, X, Clock, Flame, Droplets, CalendarClock, Edit2, Repeat, Zap, ChevronUp, Dumbbell, CheckSquare, ArrowLeft, MoreHorizontal, ArrowRight } from 'lucide-react';
 import { formatUserName, getTodayDate } from '../App';
 
 interface DashboardProps {
@@ -34,20 +34,16 @@ const WeekCalendar = ({ viewDate, onDateSelect }: { viewDate: string, onDateSele
   const [days, setDays] = useState<any[]>([]);
 
   useEffect(() => {
-    // Generate current month days using local time to avoid UTC shifts
     const now = new Date();
     const year = now.getFullYear();
     const month = now.getMonth();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    // Use the helper for consistency
     const todayStr = getTodayDate();
 
     const monthDays = [];
     for (let i = 1; i <= daysInMonth; i++) {
-        // Create date object for local time noon to avoid timezone rollover issues
         const d = new Date(year, month, i, 12, 0, 0);
-        // Manually format YYYY-MM-DD in local time
         const yyyy = d.getFullYear();
         const mm = String(d.getMonth() + 1).padStart(2, '0');
         const dd = String(d.getDate()).padStart(2, '0');
@@ -65,53 +61,49 @@ const WeekCalendar = ({ viewDate, onDateSelect }: { viewDate: string, onDateSele
     setDays(monthDays);
   }, [viewDate]);
 
-  // Auto-scroll to selected date on mount/change
   useEffect(() => {
       if (scrollRef.current) {
           const selectedEl = scrollRef.current.querySelector('.is-selected');
           if (selectedEl) {
-              selectedEl.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+              selectedEl.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
           } else {
-              // Fallback to today
               const todayEl = scrollRef.current.querySelector('.is-today');
               if (todayEl) {
-                  todayEl.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                  todayEl.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
               }
           }
       }
   }, [days]);
 
   return (
-    <div className="relative group">
+    <div className="w-full relative">
         <div 
             ref={scrollRef}
-            className="flex items-center gap-2 overflow-x-auto no-scrollbar py-2 px-1 snap-x"
+            className="flex items-center gap-3 overflow-x-auto no-scrollbar py-2 px-1 snap-x"
         >
         {days.map((d) => (
             <button 
             key={d.fullDate} 
             onClick={() => !d.isFuture && onDateSelect(d.fullDate)}
             disabled={d.isFuture}
-            className={`flex flex-col items-center justify-center gap-0.5 focus:outline-none transition-all min-w-[36px] snap-center ${d.isSelected ? 'is-selected' : ''} ${d.isToday ? 'is-today' : ''} ${d.isFuture ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer hover:opacity-80'}`}
+            className={`
+                flex-shrink-0 flex flex-col items-center justify-center w-[52px] h-[72px] rounded-2xl transition-all duration-300 snap-center
+                ${d.isSelected 
+                    ? 'bg-primary text-slate-900 shadow-lg shadow-primary/30 scale-105 is-selected' 
+                    : d.isToday
+                        ? 'bg-slate-200 dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-300 dark:border-slate-600 is-today'
+                        : 'bg-white dark:bg-slate-800/50 text-slate-400 dark:text-slate-500 border border-transparent'
+                }
+                ${d.isFuture ? 'opacity-30 grayscale cursor-not-allowed' : 'cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700'}
+            `}
             >
-            <span className={`text-[9px] font-bold uppercase ${d.isSelected ? 'text-primary dark:text-white' : 'text-slate-400 dark:text-slate-500'}`}>
-                {d.day}
-            </span>
-            <div className={`w-8 h-8 flex items-center justify-center rounded-xl text-xs font-bold transition-all ${
-                d.isSelected 
-                ? 'bg-primary text-slate-900 shadow-lg shadow-primary/30 scale-110' 
-                : d.isToday
-                    ? 'bg-slate-100 dark:bg-slate-800 text-primary border border-primary/30'
-                    : 'text-slate-500 dark:text-slate-400 bg-white dark:bg-transparent border border-slate-200 dark:border-slate-700/50'
-            }`}>
-                {d.date}
-            </div>
+            <span className="text-[10px] font-bold uppercase tracking-wider mb-0.5">{d.day}</span>
+            <span className="text-xl font-black leading-none">{d.date}</span>
+            {d.isToday && !d.isSelected && <div className="w-1 h-1 bg-primary rounded-full mt-1"></div>}
             </button>
         ))}
         </div>
-        {/* Fade gradients for scroll indication */}
-        <div className="absolute left-0 top-0 bottom-0 w-4 bg-gradient-to-r from-slate-50 dark:from-[#0f172a] to-transparent pointer-events-none"></div>
-        <div className="absolute right-0 top-0 bottom-0 w-4 bg-gradient-to-l from-slate-50 dark:from-[#0f172a] to-transparent pointer-events-none"></div>
+        <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-slate-50 dark:from-[#0f172a] to-transparent pointer-events-none"></div>
     </div>
   );
 };
@@ -340,8 +332,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [displayTime, setDisplayTime] = useState(0);
   const [exitingTaskId, setExitingTaskId] = useState<string | null>(null);
   const [showTaskForm, setShowTaskForm] = useState(false);
-  const [creationStep, setCreationStep] = useState<'type' | 'details'>('type');
+  
+  // Creation Wizard States
+  const [creationStep, setCreationStep] = useState<'type' | 'details' | 'fasting-setup'>('type');
   const [creationType, setCreationType] = useState<'todo' | 'fitness' | 'fasting'>('todo');
+  const [selectedFastingPlan, setSelectedFastingPlan] = useState<{plan: FastingPlanType, hours: number} | null>(null);
+  const [fastingName, setFastingName] = useState('');
   
   const [showFab, setShowFab] = useState(false); 
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
@@ -623,7 +619,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
           <div className="absolute top-0 left-0 h-1 bg-primary transition-all duration-1000 linear" style={{ width: `${progressWidth}%` }}></div>
         )}
         
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-4 flex-1 min-w-0">
             <button 
               onClick={() => handleToggleWithAnimation(task.id, task.completed)}
@@ -663,16 +659,18 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 </div>
               )}
 
-              <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 mt-1">
+              {/* Compact Metadata Row */}
+              <div className="flex items-center gap-3 text-xs text-slate-500 mt-1.5 flex-wrap">
                 {isActive ? (
-                  <span className={`font-mono font-bold ${isRunning ? 'text-primary animate-pulse' : 'text-yellow-500'}`}>
-                    {formatTime(displayTime)}
-                  </span>
+                  <div className={`flex items-center gap-1 font-mono font-bold ${isRunning ? 'text-primary animate-pulse' : 'text-yellow-500'}`}>
+                     <Timer className="w-3 h-3" />
+                     {formatTime(displayTime)}
+                  </div>
                 ) : (
                   <div className="flex items-center gap-1">
                     {isCompleted && task.completedAt ? (
                         <span className="text-emerald-600 dark:text-emerald-400 font-medium">
-                            Finished at {new Date(task.completedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            {new Date(task.completedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </span>
                     ) : (
                         <>
@@ -682,9 +680,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     )}
                   </div>
                 )}
+
+                {task.category && (
+                  <span className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700/50 uppercase tracking-wider text-[9px] font-bold border border-slate-200 dark:border-slate-700">
+                    {task.category}
+                  </span>
+                )}
                 
                 {!isCompleted && (task.scheduledTime || isFutureDate) && (
-                   <div className="flex items-center gap-1 text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">
+                   <div className="flex items-center gap-1 text-slate-600 dark:text-slate-400">
                      <Clock className="w-3 h-3" />
                      <span>
                         {isFutureDate && task.scheduledDate ? `${new Date(task.scheduledDate).toLocaleDateString(undefined, {month:'short', day:'numeric'})} ` : ''}
@@ -692,16 +696,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
                      </span>
                    </div>
                 )}
-                
-                {task.category && (
-                  <span className="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 uppercase tracking-wider text-[10px] border border-slate-200 dark:border-slate-700">
-                    {task.category}
-                  </span>
-                )}
-                
-                {/* Past task indicator */}
+
+                 {/* Past task indicator */}
                 {!isCompleted && isPastTask && (
-                     <span className="text-red-400 font-bold uppercase tracking-wider text-[10px]">Overdue</span>
+                     <span className="text-red-400 font-bold uppercase tracking-wider text-[9px]">Overdue</span>
                 )}
               </div>
             </div>
@@ -712,7 +710,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               <button
                 onClick={() => isUpcoming ? null : onToggleTimer(task)}
                 disabled={isUpcoming}
-                className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
+                className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${
                   isUpcoming
                     ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 cursor-not-allowed opacity-50'
                     : isActive 
@@ -720,16 +718,16 @@ export const Dashboard: React.FC<DashboardProps> = ({
                         : 'bg-slate-100 dark:bg-slate-700 text-primary hover:bg-slate-200 dark:hover:bg-slate-600'
                 }`}
               >
-                {isActive && isRunning ? <Pause className="w-5 h-5 fill-current" /> : <Play className="w-5 h-5 ml-0.5 fill-current" />}
+                {isActive && isRunning ? <Pause className="w-4 h-4 fill-current" /> : <Play className="w-4 h-4 ml-0.5 fill-current" />}
               </button>
             )}
             
             {!readOnly && (
                <button 
                     onClick={() => deleteTask(task.id)}
-                    className="p-2 text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 transition-colors"
+                    className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 transition-colors"
                 >
-                    <Trash2 className="w-5 h-5" />
+                    <Trash2 className="w-4 h-4" />
                 </button>
             )}
           </div>
@@ -959,10 +957,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
         <div className="fixed inset-0 z-30 bg-black/40 backdrop-blur-sm transition-all duration-300" onClick={() => setShowTaskForm(false)}></div>
         
         <div className="fixed bottom-0 left-0 right-0 z-40 animate-in slide-in-from-bottom-10 fade-in duration-300">
-           <div className="bg-white dark:bg-slate-900 rounded-t-3xl border-t border-slate-200 dark:border-slate-700 shadow-2xl p-6 max-w-md mx-auto">
+           <div className="bg-white dark:bg-slate-900 rounded-t-3xl border-t border-slate-200 dark:border-slate-700 shadow-2xl p-6 max-w-md mx-auto max-h-[80vh] overflow-y-auto">
                 <button 
                     onClick={() => setShowTaskForm(false)}
-                    className="absolute top-4 right-4 text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                    className="absolute top-4 right-4 text-slate-400 hover:text-slate-900 dark:hover:text-white z-10"
                 >
                     <X className="w-6 h-6" />
                 </button>
@@ -1015,7 +1013,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     </div>
                 )}
 
-                {/* STEP 2: DETAILS - FASTING */}
+                {/* STEP 2: DETAILS - FASTING SELECTION */}
                 {creationStep === 'details' && creationType === 'fasting' && (
                     <div className="space-y-4">
                         <div className="flex items-center gap-2 mb-2">
@@ -1023,17 +1021,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
                              <h3 className="font-bold text-lg">Choose Fasting Plan</h3>
                         </div>
                         
-                        <div className="space-y-2 max-h-[60vh] overflow-y-auto">
+                        <div className="space-y-2">
                             {/* Standard Plans */}
                             {['16:8', '18:6', '20:4', 'OMAD'].map((plan: any) => (
                                 <button 
                                     key={plan}
                                     onClick={() => {
                                         const hours = plan === 'OMAD' ? 23 : parseInt(plan.split(':')[0]);
-                                        onStartFast(plan as FastingPlanType, hours);
-                                        setShowTaskForm(false);
-                                        setCreationStep('type');
-                                        onNavigateToFasting(); // Go to Fasting Tab
+                                        setSelectedFastingPlan({plan: plan as FastingPlanType, hours});
+                                        setCreationStep('fasting-setup');
                                     }}
                                     className="w-full p-4 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex justify-between items-center hover:border-primary transition-all"
                                 >
@@ -1052,10 +1048,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
                                     <button 
                                         key={preset.id}
                                         onClick={() => {
-                                            onStartFast('Custom', preset.duration, preset.name);
-                                            setShowTaskForm(false);
-                                            setCreationStep('type');
-                                            onNavigateToFasting();
+                                            setSelectedFastingPlan({plan: 'Custom', hours: preset.duration});
+                                            setFastingName(preset.name);
+                                            setCreationStep('fasting-setup');
                                         }}
                                         className="w-full p-4 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800 flex justify-between items-center hover:border-indigo-500 transition-all"
                                     >
@@ -1066,6 +1061,51 @@ export const Dashboard: React.FC<DashboardProps> = ({
                                 </>
                             )}
                         </div>
+                    </div>
+                )}
+
+                {/* STEP 3: DETAILS - FASTING SETUP (New Step) */}
+                {creationStep === 'fasting-setup' && selectedFastingPlan && (
+                    <div className="space-y-6">
+                         <div className="flex items-center gap-2 mb-2">
+                             <button onClick={() => setCreationStep('details')} className="text-slate-500"><ArrowLeft className="w-5 h-5" /></button>
+                             <h3 className="font-bold text-lg">Setup Fast</h3>
+                        </div>
+
+                        <div className="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-2xl flex items-center justify-between">
+                             <div>
+                                <p className="text-xs text-indigo-500 font-bold uppercase">Selected Plan</p>
+                                <p className="text-2xl font-black text-indigo-700 dark:text-indigo-300">{selectedFastingPlan.plan}</p>
+                             </div>
+                             <div className="text-right">
+                                <p className="text-xs text-indigo-500 font-bold uppercase">Duration</p>
+                                <p className="text-2xl font-black text-indigo-700 dark:text-indigo-300">{selectedFastingPlan.hours}h</p>
+                             </div>
+                        </div>
+
+                        <div>
+                            <label className="text-xs font-bold text-slate-500 uppercase mb-2 block">Name (Optional)</label>
+                            <input 
+                                type="text" 
+                                value={fastingName}
+                                onChange={(e) => setFastingName(e.target.value)}
+                                placeholder="e.g. My Monday Fast"
+                                className="w-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm focus:border-primary outline-none"
+                            />
+                        </div>
+
+                        <button 
+                            onClick={() => {
+                                onStartFast(selectedFastingPlan.plan, selectedFastingPlan.hours, fastingName);
+                                setShowTaskForm(false);
+                                setCreationStep('type');
+                                setFastingName('');
+                                onNavigateToFasting();
+                            }}
+                            className="w-full bg-primary text-slate-900 font-bold py-4 rounded-xl hover:bg-emerald-400 shadow-lg flex justify-center items-center gap-2"
+                        >
+                            <Zap className="w-5 h-5" /> Start Fast Now
+                        </button>
                     </div>
                 )}
 
@@ -1098,7 +1138,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                                 type="text"
                                 value={newTaskTitle}
                                 onChange={(e) => setNewTaskTitle(e.target.value)}
-                                placeholder="Task title..."
+                                placeholder={creationType === 'fitness' ? "Workout title..." : "Task title..."}
                                 className="flex-1 bg-transparent text-slate-900 dark:text-white placeholder-slate-400 px-3 py-3 font-medium focus:outline-none"
                                 autoFocus
                             />
@@ -1141,22 +1181,22 @@ export const Dashboard: React.FC<DashboardProps> = ({
                              <div>
                                 <label className="text-xs font-bold text-slate-500 uppercase mb-1 block">Category</label>
                                 <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+                                    <button 
+                                        type="button"
+                                        onClick={() => { const c = prompt("New Category:"); if(c) { onAddCategory(c); setSelectedCategory(c); } }}
+                                        className="px-3 py-1.5 rounded-lg text-xs font-bold border border-dashed border-slate-300 text-slate-400 whitespace-nowrap"
+                                    >
+                                        + New
+                                    </button>
                                     {sortedCategories.map(cat => (
                                         <button
                                             key={cat} type="button"
                                             onClick={() => setSelectedCategory(cat)}
-                                            className={`px-3 py-1.5 rounded-lg text-xs font-bold border ${selectedCategory === cat ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'}`}
+                                            className={`px-3 py-1.5 rounded-lg text-xs font-bold border whitespace-nowrap ${selectedCategory === cat ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'}`}
                                         >
                                             {cat}
                                         </button>
                                     ))}
-                                    <button 
-                                        type="button"
-                                        onClick={() => { const c = prompt("New Category:"); if(c) { onAddCategory(c); setSelectedCategory(c); } }}
-                                        className="px-3 py-1.5 rounded-lg text-xs font-bold border border-dashed border-slate-300 text-slate-400"
-                                    >
-                                        + New
-                                    </button>
                                 </div>
                              </div>
                         )}
