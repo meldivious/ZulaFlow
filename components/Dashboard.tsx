@@ -28,51 +28,81 @@ interface DashboardProps {
 }
 
 const WeekCalendar = ({ viewDate, onDateSelect }: { viewDate: string, onDateSelect: (date: string) => void }) => {
-  const days = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
-  const today = new Date();
-  const currentDayIndex = today.getDay(); // 0-6
-  const todayStr = today.toISOString().split('T')[0];
-  
-  const startOfWeek = new Date(today);
-  startOfWeek.setDate(today.getDate() - currentDayIndex);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [days, setDays] = useState<any[]>([]);
 
-  const weekDates = Array.from({ length: 7 }).map((_, i) => {
-    const d = new Date(startOfWeek);
-    d.setDate(startOfWeek.getDate() + i);
-    const dateStr = d.toISOString().split('T')[0];
-    return {
-      day: days[i],
-      date: d.getDate(),
-      fullDate: dateStr,
-      isToday: dateStr === todayStr,
-      isSelected: dateStr === viewDate,
-      isFuture: dateStr > todayStr
-    };
-  });
+  useEffect(() => {
+    // Generate current month days
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    const monthDays = [];
+    for (let i = 1; i <= daysInMonth; i++) {
+        const d = new Date(year, month, i);
+        const dateStr = d.toISOString().split('T')[0];
+        monthDays.push({
+            day: dayNames[d.getDay()],
+            date: i,
+            fullDate: dateStr,
+            isToday: dateStr === todayStr,
+            isSelected: dateStr === viewDate,
+            isFuture: dateStr > todayStr
+        });
+    }
+    setDays(monthDays);
+  }, [viewDate]);
+
+  // Auto-scroll to selected date on mount/change
+  useEffect(() => {
+      if (scrollRef.current) {
+          const selectedEl = scrollRef.current.querySelector('.is-selected');
+          if (selectedEl) {
+              selectedEl.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+          } else {
+              // Fallback to today
+              const todayEl = scrollRef.current.querySelector('.is-today');
+              if (todayEl) {
+                  todayEl.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+              }
+          }
+      }
+  }, [days]); // Trigger when days are populated/re-rendered
 
   return (
-    <div className="flex justify-between items-center bg-white dark:bg-slate-800/50 p-4 rounded-2xl mb-6 shadow-sm dark:shadow-none border border-slate-200 dark:border-slate-700/50 backdrop-blur-sm overflow-x-auto no-scrollbar">
-      {weekDates.map((d, i) => (
-        <button 
-          key={i} 
-          onClick={() => !d.isFuture && onDateSelect(d.fullDate)}
-          disabled={d.isFuture}
-          className={`flex flex-col items-center gap-1 focus:outline-none transition-all min-w-[36px] ${d.isFuture ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer hover:opacity-80'}`}
+    <div className="relative group">
+        <div 
+            ref={scrollRef}
+            className="flex items-center gap-3 overflow-x-auto no-scrollbar py-2 px-1 snap-x"
         >
-          <span className={`text-[10px] font-bold ${d.isSelected ? 'text-primary dark:text-white' : 'text-slate-400 dark:text-slate-500'}`}>
-            {d.day}
-          </span>
-          <div className={`w-8 h-8 flex items-center justify-center rounded-full text-sm font-bold transition-all ${
-            d.isSelected 
-              ? 'bg-primary text-slate-900 shadow-[0_0_10px_rgba(16,185,129,0.4)] scale-110' 
-              : d.isToday
-                ? 'bg-slate-100 dark:bg-slate-700 text-primary border border-primary/30'
-                : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700/50'
-          }`}>
-            {d.date}
-          </div>
-        </button>
-      ))}
+        {days.map((d) => (
+            <button 
+            key={d.fullDate} 
+            onClick={() => !d.isFuture && onDateSelect(d.fullDate)}
+            disabled={d.isFuture}
+            className={`flex flex-col items-center gap-1 focus:outline-none transition-all min-w-[44px] snap-center ${d.isSelected ? 'is-selected' : ''} ${d.isToday ? 'is-today' : ''} ${d.isFuture ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer hover:opacity-80'}`}
+            >
+            <span className={`text-[10px] font-bold uppercase ${d.isSelected ? 'text-primary dark:text-white' : 'text-slate-400 dark:text-slate-500'}`}>
+                {d.day}
+            </span>
+            <div className={`w-10 h-10 flex items-center justify-center rounded-2xl text-sm font-bold transition-all ${
+                d.isSelected 
+                ? 'bg-primary text-slate-900 shadow-lg shadow-primary/30 scale-110' 
+                : d.isToday
+                    ? 'bg-slate-100 dark:bg-slate-800 text-primary border border-primary/30'
+                    : 'text-slate-500 dark:text-slate-400 bg-white dark:bg-transparent border border-slate-200 dark:border-slate-700/50'
+            }`}>
+                {d.date}
+            </div>
+            </button>
+        ))}
+        </div>
+        {/* Fade gradients for scroll indication */}
+        <div className="absolute left-0 top-0 bottom-0 w-4 bg-gradient-to-r from-slate-50 dark:from-[#0f172a] to-transparent pointer-events-none"></div>
+        <div className="absolute right-0 top-0 bottom-0 w-4 bg-gradient-to-l from-slate-50 dark:from-[#0f172a] to-transparent pointer-events-none"></div>
     </div>
   );
 };
