@@ -79,7 +79,7 @@ const WeekCalendar = ({ viewDate, onDateSelect }: { viewDate: string, onDateSele
     <div className="w-full relative">
         <div 
             ref={scrollRef}
-            className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-2 px-1 snap-x"
+            className="flex items-center gap-1 overflow-x-auto no-scrollbar py-2 px-1 snap-x"
         >
         {days.map((d) => (
             <button 
@@ -87,18 +87,18 @@ const WeekCalendar = ({ viewDate, onDateSelect }: { viewDate: string, onDateSele
             onClick={() => !d.isFuture && onDateSelect(d.fullDate)}
             disabled={d.isFuture}
             className={`
-                flex-shrink-0 flex flex-col items-center justify-center w-[44px] h-[56px] rounded-full transition-all duration-300 snap-center
+                flex-shrink-0 flex flex-col items-center justify-center w-12 h-14 rounded-lg transition-all duration-200 snap-center
                 ${d.isSelected 
-                    ? 'bg-primary text-slate-900 shadow-md shadow-primary/20 scale-105 is-selected font-bold' 
+                    ? 'bg-primary text-slate-900 shadow-md shadow-primary/20 scale-100 is-selected font-bold' 
                     : d.isToday
-                        ? 'border-2 border-primary text-primary font-bold is-today'
+                        ? 'bg-slate-200 dark:bg-slate-700/50 text-slate-900 dark:text-white is-today border-2 border-primary/20'
                         : 'text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'
                 }
-                ${d.isFuture ? 'opacity-20 cursor-not-allowed' : 'cursor-pointer'}
+                ${d.isFuture ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer'}
             `}
             >
-            <span className={`text-[9px] uppercase leading-none mb-1 ${d.isSelected ? 'text-slate-900/70' : ''}`}>{d.day}</span>
-            <span className="text-lg leading-none">{d.date}</span>
+            <span className={`text-[9px] uppercase leading-none mb-1 font-bold ${d.isSelected ? 'text-slate-900/60' : ''}`}>{d.day}</span>
+            <span className="text-xl leading-none font-bold">{d.date}</span>
             </button>
         ))}
         </div>
@@ -320,14 +320,20 @@ export const Dashboard: React.FC<DashboardProps> = ({
   fastingPresets,
   onStartFast
 }) => {
-  const [newTaskTitle, setNewTaskTitle] = useState('');
-  const [newTaskDuration, setNewTaskDuration] = useState<string>('5');
+  // SEPARATE STATES FOR GOAL TYPES
+  const [fitnessTitle, setFitnessTitle] = useState('');
+  const [fitnessDuration, setFitnessDuration] = useState<string>('30');
+  const [fitnessTime, setFitnessTime] = useState('');
+  
+  const [todoTitle, setTodoTitle] = useState('');
+  const [todoDuration, setTodoDuration] = useState<string>('15');
+  const [todoTime, setTodoTime] = useState('');
+  
   const [categoryMode, setCategoryMode] = useState<'select' | 'create'>('select');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [customCategory, setCustomCategory] = useState('');
-  const [scheduledDateTime, setScheduledDateTime] = useState('');
   
-  const [isRecurring, setIsRecurring] = useState(false);
+  const [recurrence, setRecurrence] = useState<'none'|'daily'|'weekly'|'monthly'>('none');
   const [displayTime, setDisplayTime] = useState(0);
   const [exitingTaskId, setExitingTaskId] = useState<string | null>(null);
   const [showTaskForm, setShowTaskForm] = useState(false);
@@ -462,14 +468,27 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   const addTask = (e: React.FormEvent) => {
     e.preventDefault();
-    if (readOnly || !newTaskTitle.trim()) return;
+    if (readOnly) return;
+
+    let title, durationStr, timeStr;
+    if (creationType === 'fitness') {
+        title = fitnessTitle;
+        durationStr = fitnessDuration;
+        timeStr = fitnessTime;
+    } else {
+        title = todoTitle;
+        durationStr = todoDuration;
+        timeStr = todoTime;
+    }
+
+    if (!title.trim()) return;
 
     // Use local date helper
     let scheduledDateStr = getTodayDate();
     let scheduledTimeStr = undefined;
 
-    if (scheduledDateTime) {
-        const d = new Date(scheduledDateTime);
+    if (timeStr) {
+        const d = new Date(timeStr);
         const yyyy = d.getFullYear();
         const mm = String(d.getMonth() + 1).padStart(2, '0');
         const dd = String(d.getDate()).padStart(2, '0');
@@ -495,26 +514,34 @@ export const Dashboard: React.FC<DashboardProps> = ({
         onAddCategory(finalCategory);
     }
 
-    const duration = parseInt(newTaskDuration) || 5;
+    const duration = parseInt(durationStr) || 5;
     const now = new Date();
 
     const newTask: Task = {
       id: Math.random().toString(36).substr(2, 9),
-      title: newTaskTitle,
+      title: title,
       completed: false,
       category: finalCategory,
       duration: duration,
       scheduledTime: scheduledTimeStr,
       scheduledDate: scheduledDateStr,
       createdAt: now.toISOString(),
-      recurring: isRecurring
+      recurring: recurrence !== 'none'
     };
     
     setTasks(prev => [...prev, newTask]);
-    setNewTaskTitle('');
-    setNewTaskDuration('5');
-    setScheduledDateTime('');
-    setIsRecurring(false);
+    
+    // Reset based on type
+    if (creationType === 'fitness') {
+        setFitnessTitle('');
+        setFitnessDuration('30');
+        setFitnessTime('');
+    } else {
+        setTodoTitle('');
+        setTodoDuration('15');
+        setTodoTime('');
+    }
+    setRecurrence('none');
     setCustomCategory('');
     setSelectedCategory(''); 
     setShowTaskForm(false);
@@ -658,8 +685,21 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 </div>
               )}
 
-              {/* Compact Metadata Row */}
+              {/* Compact Metadata Row (Time, Duration, Category) */}
               <div className="flex items-center gap-3 text-xs text-slate-500 mt-1.5 flex-wrap">
+                
+                {/* Time */}
+                {!isCompleted && (task.scheduledTime || isFutureDate) && (
+                   <div className="flex items-center gap-1 text-slate-600 dark:text-slate-400">
+                     <Clock className="w-3 h-3" />
+                     <span>
+                        {isFutureDate && task.scheduledDate ? `${new Date(task.scheduledDate).toLocaleDateString(undefined, {month:'short', day:'numeric'})} ` : ''}
+                        {task.scheduledTime}
+                     </span>
+                   </div>
+                )}
+
+                {/* Duration */}
                 {isActive ? (
                   <div className={`flex items-center gap-1 font-mono font-bold ${isRunning ? 'text-primary animate-pulse' : 'text-yellow-500'}`}>
                      <Timer className="w-3 h-3" />
@@ -680,20 +720,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   </div>
                 )}
 
+                {/* Category */}
                 {task.category && (
                   <span className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700/50 uppercase tracking-wider text-[9px] font-bold border border-slate-200 dark:border-slate-700">
                     {task.category}
                   </span>
-                )}
-                
-                {!isCompleted && (task.scheduledTime || isFutureDate) && (
-                   <div className="flex items-center gap-1 text-slate-600 dark:text-slate-400">
-                     <Clock className="w-3 h-3" />
-                     <span>
-                        {isFutureDate && task.scheduledDate ? `${new Date(task.scheduledDate).toLocaleDateString(undefined, {month:'short', day:'numeric'})} ` : ''}
-                        {task.scheduledTime}
-                     </span>
-                   </div>
                 )}
 
                  {/* Past task indicator */}
@@ -735,12 +766,18 @@ export const Dashboard: React.FC<DashboardProps> = ({
     );
   };
   
-  const isFutureSchedule = scheduledDateTime && new Date(scheduledDateTime) > new Date();
   const isTimerRunning = activeTaskId && timerExpiry;
   const isTimerPaused = activeTaskId && !timerExpiry;
   const hasPending = currentTasks.length > 0;
   const now = new Date();
   const minDateTime = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
+
+  // Helper variables for current form
+  const currentTitle = creationType === 'fitness' ? fitnessTitle : todoTitle;
+  const currentDuration = creationType === 'fitness' ? fitnessDuration : todoDuration;
+  const currentTime = creationType === 'fitness' ? fitnessTime : todoTime;
+  
+  const isFutureTime = currentTime && new Date(currentTime) > new Date();
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 relative pb-32">
@@ -1021,6 +1058,17 @@ export const Dashboard: React.FC<DashboardProps> = ({
                         </div>
                         
                         <div className="space-y-2">
+                            {/* Create Custom Fast Button */}
+                            <button 
+                                onClick={() => {
+                                    setSelectedFastingPlan({plan: 'Custom', hours: 16});
+                                    setCreationStep('fasting-setup');
+                                }}
+                                className="w-full p-4 rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-600 text-slate-500 hover:text-primary hover:border-primary flex justify-center items-center gap-2 transition-all font-bold"
+                            >
+                                <Plus className="w-5 h-5" /> Create Custom Fast
+                            </button>
+
                             {/* Standard Plans */}
                             {['16:8', '18:6', '20:4', 'OMAD'].map((plan: any) => (
                                 <button 
@@ -1071,15 +1119,27 @@ export const Dashboard: React.FC<DashboardProps> = ({
                              <h3 className="font-bold text-lg">Setup Fast</h3>
                         </div>
 
-                        <div className="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-2xl flex items-center justify-between">
-                             <div>
-                                <p className="text-xs text-indigo-500 font-bold uppercase">Selected Plan</p>
-                                <p className="text-2xl font-black text-indigo-700 dark:text-indigo-300">{selectedFastingPlan.plan}</p>
+                        <div className="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-2xl">
+                             <div className="flex items-center justify-between mb-2">
+                                <div>
+                                    <p className="text-xs text-indigo-500 font-bold uppercase">Plan Type</p>
+                                    <p className="text-2xl font-black text-indigo-700 dark:text-indigo-300">{selectedFastingPlan.plan}</p>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-xs text-indigo-500 font-bold uppercase">Duration</p>
+                                    <p className="text-2xl font-black text-indigo-700 dark:text-indigo-300">{selectedFastingPlan.hours}h</p>
+                                </div>
                              </div>
-                             <div className="text-right">
-                                <p className="text-xs text-indigo-500 font-bold uppercase">Duration</p>
-                                <p className="text-2xl font-black text-indigo-700 dark:text-indigo-300">{selectedFastingPlan.hours}h</p>
-                             </div>
+                             
+                             {/* Allow duration edit if Custom */}
+                             {selectedFastingPlan.plan === 'Custom' && (
+                                <input 
+                                    type="range" min="1" max="72" 
+                                    value={selectedFastingPlan.hours}
+                                    onChange={(e) => setSelectedFastingPlan({...selectedFastingPlan, hours: parseInt(e.target.value)})}
+                                    className="w-full accent-indigo-500 h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer"
+                                />
+                             )}
                         </div>
 
                         <div>
@@ -1130,8 +1190,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
                                     <button
                                         type="button"
                                         key={activity}
-                                        onClick={() => setNewTaskTitle(activity)}
-                                        className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-colors whitespace-nowrap ${newTaskTitle === activity ? 'bg-emerald-500 text-white border-emerald-500' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-transparent'}`}
+                                        onClick={() => setFitnessTitle(activity)}
+                                        className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-colors whitespace-nowrap ${currentTitle === activity ? 'bg-emerald-500 text-white border-emerald-500' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-transparent'}`}
                                     >
                                         {activity}
                                     </button>
@@ -1142,9 +1202,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
                         <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 rounded-xl p-1">
                             <input
                                 type="text"
-                                value={newTaskTitle}
-                                onChange={(e) => setNewTaskTitle(e.target.value)}
-                                placeholder={creationType === 'fitness' ? "Workout title..." : "Task title..."}
+                                value={currentTitle}
+                                onChange={(e) => creationType === 'fitness' ? setFitnessTitle(e.target.value) : setTodoTitle(e.target.value)}
+                                placeholder={creationType === 'fitness' ? "Program title..." : "Task title..."}
                                 className="flex-1 bg-transparent text-slate-900 dark:text-white placeholder-slate-400 px-3 py-3 font-medium focus:outline-none"
                                 autoFocus
                             />
@@ -1157,8 +1217,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
                                     <Timer className="w-4 h-4 text-slate-400 mr-2 shrink-0" />
                                     <input 
                                         type="number" min="1" max="180"
-                                        value={newTaskDuration}
-                                        onChange={(e) => setNewTaskDuration(e.target.value)}
+                                        value={currentDuration}
+                                        onChange={(e) => creationType === 'fitness' ? setFitnessDuration(e.target.value) : setTodoDuration(e.target.value)}
                                         className="w-full bg-transparent font-bold text-slate-900 dark:text-white focus:outline-none h-full"
                                     />
                                     <span className="text-xs text-slate-500 font-bold shrink-0">min</span>
@@ -1169,17 +1229,33 @@ export const Dashboard: React.FC<DashboardProps> = ({
                                 <div className="relative h-14">
                                     <input 
                                         type="datetime-local"
-                                        value={scheduledDateTime}
-                                        onChange={(e) => setScheduledDateTime(e.target.value)}
+                                        value={currentTime}
+                                        onChange={(e) => creationType === 'fitness' ? setFitnessTime(e.target.value) : setTodoTime(e.target.value)}
                                         min={minDateTime}
-                                        className={`w-full h-full bg-slate-100 dark:bg-slate-800 rounded-xl px-2 text-xs font-bold text-slate-900 dark:text-white focus:outline-none ${!scheduledDateTime ? 'text-transparent' : ''}`}
+                                        className={`w-full h-full bg-slate-100 dark:bg-slate-800 rounded-xl px-2 text-xs font-bold text-slate-900 dark:text-white focus:outline-none ${!currentTime ? 'text-transparent' : ''}`}
                                     />
-                                    {!scheduledDateTime && (
+                                    {!currentTime && (
                                         <div className="absolute inset-0 flex items-center px-3 pointer-events-none text-slate-400 text-xs">
                                             <Clock className="w-4 h-4 mr-2" /> Now
                                         </div>
                                     )}
                                 </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="text-xs font-bold text-slate-500 uppercase mb-1 block">Repeat</label>
+                            <div className="flex gap-2">
+                                {['none', 'daily', 'weekly'].map((r: any) => (
+                                    <button 
+                                        key={r}
+                                        type="button"
+                                        onClick={() => setRecurrence(r)}
+                                        className={`flex-1 py-2 rounded-lg text-xs font-bold capitalize border ${recurrence === r ? 'bg-primary text-slate-900 border-primary' : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500'}`}
+                                    >
+                                        {r}
+                                    </button>
+                                ))}
                             </div>
                         </div>
 
@@ -1209,10 +1285,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
                         <button 
                             type="submit"
-                            disabled={!newTaskTitle.trim()}
+                            disabled={!currentTitle.trim()}
                             className="bg-primary text-slate-900 font-bold py-4 rounded-xl hover:bg-emerald-400 disabled:opacity-50 shadow-lg mt-2 flex justify-center items-center gap-2"
                         >
-                            <Plus className="w-5 h-5" /> Create {creationType === 'fitness' ? 'Workout' : 'Task'}
+                            <Plus className="w-5 h-5" /> 
+                            {isFutureTime ? `Schedule ${creationType === 'fitness' ? 'Workout' : 'Task'}` : `Start ${creationType === 'fitness' ? 'Workout' : 'Task'} Now`}
                         </button>
                     </form>
                 )}

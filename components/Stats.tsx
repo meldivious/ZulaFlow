@@ -42,6 +42,8 @@ export const Stats: React.FC<StatsProps> = ({ history, categories }) => {
   // Get last 7 days
   const data = history.slice(-7);
   const totalWorkouts = history.length;
+  const [email, setEmail] = useState('');
+  const [subscribed, setSubscribed] = useState(false);
   
   // New Stats Calculations
   const totalWeeklySteps = data.reduce((acc, curr) => acc + (curr.steps || 0), 0);
@@ -179,6 +181,11 @@ export const Stats: React.FC<StatsProps> = ({ history, categories }) => {
     return null;
   };
 
+  const handleSubscribe = (e: React.FormEvent) => {
+      e.preventDefault();
+      if(email) setSubscribed(true);
+  };
+
   return (
     <div className="relative pb-20">
       <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
@@ -248,7 +255,7 @@ export const Stats: React.FC<StatsProps> = ({ history, categories }) => {
           </div>
         </div>
 
-        {/* Peak Performance Section (New) */}
+        {/* Peak Performance Section */}
         <div className="bg-gradient-to-r from-violet-600 to-indigo-600 dark:from-violet-900/80 dark:to-indigo-900/80 p-6 rounded-2xl shadow-lg relative overflow-hidden text-white">
             <div className="absolute top-0 right-0 p-4 opacity-10">
                 <Zap className="w-24 h-24" />
@@ -329,7 +336,7 @@ export const Stats: React.FC<StatsProps> = ({ history, categories }) => {
           </div>
         </div>
 
-        {/* Top Categories Chart - Redesigned as List */}
+        {/* Top Categories Chart */}
         <div className="bg-white dark:bg-card p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm dark:shadow-none">
            <div className="flex justify-between items-center mb-6">
              <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
@@ -365,6 +372,46 @@ export const Stats: React.FC<StatsProps> = ({ history, categories }) => {
               )}
           </div>
         </div>
+
+        {/* Email Subscription Box */}
+        <div className="bg-slate-900 dark:bg-slate-800 rounded-2xl p-6 text-white text-center relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-transparent pointer-events-none"></div>
+            <div className="relative z-10">
+                {!subscribed ? (
+                    <form onSubmit={handleSubscribe} className="space-y-4">
+                        <div className="flex justify-center mb-2">
+                            <div className="p-3 bg-white/10 rounded-full">
+                                <Mail className="w-6 h-6 text-primary" />
+                            </div>
+                        </div>
+                        <h3 className="font-bold text-lg">Weekly Progress Report</h3>
+                        <p className="text-sm text-slate-300">Get detailed insights delivered to your inbox.</p>
+                        <div className="flex gap-2">
+                            <input 
+                                type="email" 
+                                placeholder="Enter your email" 
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                className="flex-1 bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary placeholder-slate-400"
+                                required
+                            />
+                            <button type="submit" className="bg-primary text-slate-900 font-bold px-4 py-3 rounded-xl hover:bg-emerald-400 transition-colors">
+                                <Check className="w-5 h-5" />
+                            </button>
+                        </div>
+                    </form>
+                ) : (
+                    <div className="py-6 animate-in zoom-in">
+                        <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <Check className="w-6 h-6 text-white" />
+                        </div>
+                        <h3 className="font-bold text-lg">You're Subscribed!</h3>
+                        <p className="text-sm text-slate-300 mt-2">Check your inbox every Monday.</p>
+                    </div>
+                )}
+            </div>
+        </div>
+
       </div>
     </div>
   );

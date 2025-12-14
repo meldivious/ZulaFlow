@@ -5,7 +5,7 @@ import { Stats } from './components/Stats';
 import { Shop } from './components/Shop';
 import { Fasting } from './components/Fasting';
 import { Tab, Task, AppState, DayLog, Template, CartItem, FastingSession, WeightEntry, NoteEntry, FastingPreset, FastingPlanType } from './types';
-import { LayoutDashboard, Sparkles, BarChart3, Menu, ArrowRight, UserCircle, LogOut, Download, Upload, Sun, Moon, Clock, ShoppingBag, X, Zap, Smartphone, HardDrive, RefreshCw, Share } from 'lucide-react';
+import { LayoutDashboard, Sparkles, BarChart3, Menu, ArrowRight, UserCircle, LogOut, Download, Upload, Sun, Moon, Clock, ShoppingBag, X, Zap, Smartphone, HardDrive, RefreshCw, Share, Mail } from 'lucide-react';
 
 const STORAGE_KEY = 'fitflow_data';
 
@@ -263,27 +263,6 @@ const App: React.FC = () => {
   const [showCelebration, setShowCelebration] = useState(false);
 
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // Request Notification Permission on Mount
-  useEffect(() => {
-    if ('Notification' in window && Notification.permission === 'default') {
-        // Wait a bit before asking to not be annoying
-        setTimeout(() => {
-            Notification.requestPermission().then(permission => {
-                if (permission === 'granted') {
-                    try {
-                        new Notification("Welcome to ZulaFlow", {
-                            body: "Get ready to crush your goals today! tap to start.",
-                            icon: "/icon.png"
-                        });
-                    } catch (e) {
-                        console.log("Notification failed", e);
-                    }
-                }
-            });
-        }, 5000);
-    }
-  }, []);
 
   useEffect(() => {
     const handleInteraction = () => {
@@ -742,7 +721,9 @@ const App: React.FC = () => {
             <span className="font-bold text-slate-900 text-3xl">Z</span>
           </div>
           <h1 className="text-3xl font-bold text-center mb-2">Welcome to ZulaFlow</h1>
-          <p className="text-slate-500 dark:text-slate-400 text-center mb-8">Your offline-first daily fitness companion.</p>
+          <p className="text-slate-500 dark:text-slate-400 text-center mb-8">
+            Your all-in-one companion for fasting tracking, fitness goals, and daily tasks management.
+          </p>
           <form onSubmit={handleNameSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2 uppercase tracking-wide">What should we call you?</label>
@@ -763,6 +744,11 @@ const App: React.FC = () => {
             >
               Get Started <ArrowRight className="w-5 h-5" />
             </button>
+            <div className="text-center">
+                <button type="button" className="text-sm font-bold text-slate-500 dark:text-slate-400 hover:text-primary transition-colors">
+                    or login with email
+                </button>
+            </div>
           </form>
         </div>
       </div>
