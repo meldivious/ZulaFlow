@@ -720,6 +720,7 @@ const App: React.FC = () => {
   
   const waterIntake = calculateWaterIntake(tasks);
 
+  // Badge Logic: Only show on Dashboard tasks
   let TaskBadge = null;
   if (hasActiveToday) {
       TaskBadge = <div className="absolute top-2 right-1/4 translate-x-1/2 w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.6)] border border-white dark:border-slate-900 z-10"></div>;
@@ -849,7 +850,7 @@ const App: React.FC = () => {
       {/* Navigation */}
       <nav className="fixed bottom-0 left-0 right-0 bg-white/95 dark:bg-[#0f172a]/95 backdrop-blur-xl border-t border-slate-200 dark:border-slate-800 pb-safe z-40">
         <div className="max-w-md mx-auto flex justify-around items-center h-16">
-        <button onClick={() => setActiveTab('dashboard')} className={`flex flex-col items-center gap-1 w-full h-full justify-center ${activeTab === 'dashboard' ? 'text-primary' : 'text-slate-500'}`}>
+        <button onClick={() => setActiveTab('dashboard')} className={`flex flex-col items-center gap-1 w-full h-full justify-center relative ${activeTab === 'dashboard' ? 'text-primary' : 'text-slate-500'}`}>
             <LayoutDashboard className="w-6 h-6" />
             <span className="text-[10px] font-medium uppercase">Tasks</span>
             {TaskBadge}

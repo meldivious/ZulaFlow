@@ -38,7 +38,7 @@ const WeekCalendar = ({ viewDate, onDateSelect }: { viewDate: string, onDateSele
     const year = now.getFullYear();
     const month = now.getMonth();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const dayNames = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
     const todayStr = getTodayDate();
 
     const monthDays = [];
@@ -79,7 +79,7 @@ const WeekCalendar = ({ viewDate, onDateSelect }: { viewDate: string, onDateSele
     <div className="w-full relative">
         <div 
             ref={scrollRef}
-            className="flex items-center gap-3 overflow-x-auto no-scrollbar py-2 px-1 snap-x"
+            className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-2 px-1 snap-x"
         >
         {days.map((d) => (
             <button 
@@ -87,19 +87,18 @@ const WeekCalendar = ({ viewDate, onDateSelect }: { viewDate: string, onDateSele
             onClick={() => !d.isFuture && onDateSelect(d.fullDate)}
             disabled={d.isFuture}
             className={`
-                flex-shrink-0 flex flex-col items-center justify-center w-[52px] h-[72px] rounded-2xl transition-all duration-300 snap-center
+                flex-shrink-0 flex flex-col items-center justify-center w-[44px] h-[56px] rounded-full transition-all duration-300 snap-center
                 ${d.isSelected 
-                    ? 'bg-primary text-slate-900 shadow-lg shadow-primary/30 scale-105 is-selected' 
+                    ? 'bg-primary text-slate-900 shadow-md shadow-primary/20 scale-105 is-selected font-bold' 
                     : d.isToday
-                        ? 'bg-slate-200 dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-300 dark:border-slate-600 is-today'
-                        : 'bg-white dark:bg-slate-800/50 text-slate-400 dark:text-slate-500 border border-transparent'
+                        ? 'border-2 border-primary text-primary font-bold is-today'
+                        : 'text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'
                 }
-                ${d.isFuture ? 'opacity-30 grayscale cursor-not-allowed' : 'cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700'}
+                ${d.isFuture ? 'opacity-20 cursor-not-allowed' : 'cursor-pointer'}
             `}
             >
-            <span className="text-[10px] font-bold uppercase tracking-wider mb-0.5">{d.day}</span>
-            <span className="text-xl font-black leading-none">{d.date}</span>
-            {d.isToday && !d.isSelected && <div className="w-1 h-1 bg-primary rounded-full mt-1"></div>}
+            <span className={`text-[9px] uppercase leading-none mb-1 ${d.isSelected ? 'text-slate-900/70' : ''}`}>{d.day}</span>
+            <span className="text-lg leading-none">{d.date}</span>
             </button>
         ))}
         </div>
@@ -481,7 +480,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
     incrementCreateClicks();
 
     let finalCategory = '';
-    if (creationType === 'fitness') {
+    if (creationType === 'fitness' && !selectedCategory) {
         finalCategory = 'Fitness';
     } else if (categoryMode === 'create') {
       finalCategory = customCategory.trim() || 'General';
@@ -954,10 +953,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
       {/* CREATE GOAL WIZARD */}
       {!readOnly && showTaskForm && (
         <>
-        <div className="fixed inset-0 z-30 bg-black/40 backdrop-blur-sm transition-all duration-300" onClick={() => setShowTaskForm(false)}></div>
+        <div className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-sm transition-all duration-300" onClick={() => setShowTaskForm(false)}></div>
         
-        <div className="fixed bottom-0 left-0 right-0 z-40 animate-in slide-in-from-bottom-10 fade-in duration-300">
-           <div className="bg-white dark:bg-slate-900 rounded-t-3xl border-t border-slate-200 dark:border-slate-700 shadow-2xl p-6 max-w-md mx-auto max-h-[80vh] overflow-y-auto">
+        <div className="fixed bottom-0 left-0 right-0 z-[101] animate-in slide-in-from-bottom-10 fade-in duration-300">
+           <div className="bg-white dark:bg-slate-900 rounded-t-3xl border-t border-slate-200 dark:border-slate-700 shadow-2xl p-6 max-w-md mx-auto max-h-[80vh] overflow-y-auto pb-safe">
                 <button 
                     onClick={() => setShowTaskForm(false)}
                     className="absolute top-4 right-4 text-slate-400 hover:text-slate-900 dark:hover:text-white z-10"
@@ -967,7 +966,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
                 {/* STEP 1: CHOOSE TYPE */}
                 {creationStep === 'type' && (
-                    <div className="space-y-4">
+                    <div className="space-y-4 mb-8">
                         <h3 className="text-xl font-bold text-center text-slate-900 dark:text-white mb-6">What type of goal?</h3>
                         
                         <div className="grid grid-cols-1 gap-3">
@@ -1015,7 +1014,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
                 {/* STEP 2: DETAILS - FASTING SELECTION */}
                 {creationStep === 'details' && creationType === 'fasting' && (
-                    <div className="space-y-4">
+                    <div className="space-y-4 mb-8">
                         <div className="flex items-center gap-2 mb-2">
                              <button onClick={() => setCreationStep('type')} className="text-slate-500"><ArrowLeft className="w-5 h-5" /></button>
                              <h3 className="font-bold text-lg">Choose Fasting Plan</h3>
@@ -1066,7 +1065,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
                 {/* STEP 3: DETAILS - FASTING SETUP (New Step) */}
                 {creationStep === 'fasting-setup' && selectedFastingPlan && (
-                    <div className="space-y-6">
+                    <div className="space-y-6 mb-8">
                          <div className="flex items-center gap-2 mb-2">
                              <button onClick={() => setCreationStep('details')} className="text-slate-500"><ArrowLeft className="w-5 h-5" /></button>
                              <h3 className="font-bold text-lg">Setup Fast</h3>
@@ -1111,15 +1110,22 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
                 {/* STEP 2: DETAILS - TODO / FITNESS */}
                 {creationStep === 'details' && (creationType === 'todo' || creationType === 'fitness') && (
-                    <form onSubmit={addTask} className="flex flex-col gap-4">
+                    <form onSubmit={addTask} className="flex flex-col gap-4 mb-8">
                         <div className="flex items-center gap-2 mb-1">
                              <button type="button" onClick={() => setCreationStep('type')} className="text-slate-500"><ArrowLeft className="w-5 h-5" /></button>
-                             <h3 className="font-bold text-lg capitalize">New {creationType} Goal</h3>
+                             <h3 className="font-bold text-lg capitalize">{creationType === 'todo' ? 'New To-do Task' : 'New Fitness Goal'}</h3>
                         </div>
 
                         {/* Quick Chips for Fitness */}
                         {creationType === 'fitness' && (
                              <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+                                <button 
+                                    type="button"
+                                    onClick={() => { const c = prompt("New Workout Category:"); if(c) { onAddCategory(c); setSelectedCategory(c); } }}
+                                    className="px-3 py-1.5 rounded-full text-xs font-bold border border-dashed border-slate-300 text-slate-400 whitespace-nowrap"
+                                >
+                                    + New
+                                </button>
                                 {['Running', 'Gym', 'Yoga', 'Walk', 'HIIT', 'Stretch'].map(activity => (
                                     <button
                                         type="button"
@@ -1147,26 +1153,26 @@ export const Dashboard: React.FC<DashboardProps> = ({
                         <div className="flex gap-4">
                             <div className="flex-1">
                                 <label className="text-xs font-bold text-slate-500 uppercase mb-1 block">Duration</label>
-                                <div className="flex items-center bg-slate-100 dark:bg-slate-800 rounded-xl px-3 py-3">
-                                    <Timer className="w-4 h-4 text-slate-400 mr-2" />
+                                <div className="flex items-center bg-slate-100 dark:bg-slate-800 rounded-xl px-3 h-14">
+                                    <Timer className="w-4 h-4 text-slate-400 mr-2 shrink-0" />
                                     <input 
                                         type="number" min="1" max="180"
                                         value={newTaskDuration}
                                         onChange={(e) => setNewTaskDuration(e.target.value)}
-                                        className="w-full bg-transparent font-bold text-slate-900 dark:text-white focus:outline-none"
+                                        className="w-full bg-transparent font-bold text-slate-900 dark:text-white focus:outline-none h-full"
                                     />
-                                    <span className="text-xs text-slate-500 font-bold">min</span>
+                                    <span className="text-xs text-slate-500 font-bold shrink-0">min</span>
                                 </div>
                             </div>
                              <div className="flex-1">
                                 <label className="text-xs font-bold text-slate-500 uppercase mb-1 block">Start Time</label>
-                                <div className="relative">
+                                <div className="relative h-14">
                                     <input 
                                         type="datetime-local"
                                         value={scheduledDateTime}
                                         onChange={(e) => setScheduledDateTime(e.target.value)}
                                         min={minDateTime}
-                                        className={`w-full bg-slate-100 dark:bg-slate-800 rounded-xl px-2 py-3 text-xs font-bold text-slate-900 dark:text-white focus:outline-none ${!scheduledDateTime ? 'text-transparent' : ''}`}
+                                        className={`w-full h-full bg-slate-100 dark:bg-slate-800 rounded-xl px-2 text-xs font-bold text-slate-900 dark:text-white focus:outline-none ${!scheduledDateTime ? 'text-transparent' : ''}`}
                                     />
                                     {!scheduledDateTime && (
                                         <div className="absolute inset-0 flex items-center px-3 pointer-events-none text-slate-400 text-xs">
