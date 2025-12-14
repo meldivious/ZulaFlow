@@ -13,25 +13,45 @@ const PRESETS = [
     id: 'reset', 
     title: 'Daily 7-Min Reset', 
     duration: '7 min',
-    prompt: 'Create a 7-minute full-body reset workout containing jumping jacks, squats, lunges, and plank. Industry standard structure.' 
+    tasks: [
+        { title: 'Jumping Jacks', category: 'Fitness', duration: 1 },
+        { title: 'Bodyweight Squats', category: 'Fitness', duration: 2 },
+        { title: 'Lunges', category: 'Fitness', duration: 2 },
+        { title: 'Plank', category: 'Fitness', duration: 2 }
+    ]
   },
   { 
     id: 'core', 
     title: 'Core & Abs Blast', 
     duration: '10 min',
-    prompt: 'Create a 10-minute intense core workout featuring crunches, leg raises, russian twists, and mountain climbers.' 
+    tasks: [
+        { title: 'Crunches', category: 'Fitness', duration: 3 },
+        { title: 'Leg Raises', category: 'Fitness', duration: 3 },
+        { title: 'Russian Twists', category: 'Fitness', duration: 2 },
+        { title: 'Mountain Climbers', category: 'Fitness', duration: 2 }
+    ]
   },
   { 
     id: 'fullbody', 
     title: 'Full Body HIIT', 
     duration: '20 min',
-    prompt: 'Create a 20-minute Full Body HIIT workout. Include warm-up, high intensity intervals (burpees, pushups, high knees), and cool down.' 
+    tasks: [
+        { title: 'Warm-up Jog', category: 'Fitness', duration: 3 },
+        { title: 'Burpees', category: 'Fitness', duration: 4 },
+        { title: 'Pushups', category: 'Fitness', duration: 4 },
+        { title: 'High Knees', category: 'Fitness', duration: 4 },
+        { title: 'Cool Down Stretch', category: 'Fitness', duration: 5 }
+    ]
   },
   { 
     id: 'yoga', 
     title: 'Morning Yoga Flow', 
     duration: '15 min',
-    prompt: 'Create a 15-minute morning yoga flow for flexibility and mindfulness. Include sun salutations, warrior poses, and child\'s pose.' 
+    tasks: [
+        { title: 'Sun Salutations', category: 'Fitness', duration: 5 },
+        { title: 'Warrior I & II', category: 'Fitness', duration: 5 },
+        { title: 'Child\'s Pose', category: 'Fitness', duration: 5 }
+    ]
   }
 ];
 
@@ -41,28 +61,33 @@ export const AIMentor: React.FC<AIMentorProps> = ({ onAddTasks }) => {
   const [generatedTasks, setGeneratedTasks] = useState<Task[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const handleGenerate = async (customPrompt?: string) => {
-    const promptToUse = customPrompt || prompt;
-    if (!promptToUse.trim()) return;
+  const handleGenerate = async () => {
+    if (!prompt.trim()) return;
     
     setLoading(true);
     setError(null);
     setGeneratedTasks(null);
 
     try {
-      const tasks = await generateWorkoutPlan(promptToUse);
-      if (customPrompt) {
-        // If it was a preset, add immediately
-        onAddTasks(tasks);
-      } else {
-        // If custom, show preview
-        setGeneratedTasks(tasks);
-      }
+      const tasks = await generateWorkoutPlan(prompt);
+      setGeneratedTasks(tasks);
     } catch (err) {
       setError("Failed to generate plan. Please check your connection or API key.");
     } finally {
       setLoading(false);
     }
+  };
+
+  const handlePresetClick = (presetTasks: { title: string, category: string, duration: number }[]) => {
+      const newTasks = presetTasks.map(t => ({
+          id: Math.random().toString(36).substr(2, 9),
+          title: t.title,
+          completed: false,
+          category: t.category,
+          duration: t.duration,
+          createdAt: new Date().toISOString()
+      }));
+      onAddTasks(newTasks);
   };
 
   const handleAccept = () => {
@@ -84,8 +109,7 @@ export const AIMentor: React.FC<AIMentorProps> = ({ onAddTasks }) => {
             {PRESETS.map(preset => (
               <button
                 key={preset.id}
-                onClick={() => handleGenerate(preset.prompt)}
-                disabled={loading}
+                onClick={() => handlePresetClick(preset.tasks)}
                 className="bg-white dark:bg-card border border-slate-200 dark:border-slate-700 hover:border-primary/50 hover:bg-slate-50 dark:hover:bg-slate-800 p-4 rounded-xl text-left transition-all group relative overflow-hidden shadow-sm dark:shadow-none"
               >
                 <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20 transition-opacity">
@@ -125,7 +149,7 @@ export const AIMentor: React.FC<AIMentorProps> = ({ onAddTasks }) => {
           />
 
           <button
-            onClick={() => handleGenerate()}
+            onClick={handleGenerate}
             disabled={loading || !prompt.trim()}
             className="mt-4 w-full bg-white text-indigo-900 font-bold py-3 px-6 rounded-xl hover:bg-indigo-50 disabled:opacity-50 flex justify-center items-center gap-2 transition-all"
           >

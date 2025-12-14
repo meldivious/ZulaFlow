@@ -49,10 +49,8 @@ const PLAY_SUCCESS_SOUND = () => {
 };
 
 // HELPER: Get Local ISO Date (YYYY-MM-DD)
-// This fixes the bug where evening users see tomorrow's date
 export const getTodayDate = () => {
   const d = new Date();
-  // Adjust for timezone offset to get local YYYY-MM-DD
   const localIso = new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString();
   return localIso.split('T')[0];
 };
@@ -722,7 +720,7 @@ const App: React.FC = () => {
           </div>
           <h1 className="text-3xl font-bold text-center mb-2">Welcome to ZulaFlow</h1>
           <p className="text-slate-500 dark:text-slate-400 text-center mb-8">
-            Your all-in-one companion for fasting tracking, fitness goals, and daily tasks management.
+            Your all in one todo list, fasting and fitness app.
           </p>
           <form onSubmit={handleNameSubmit} className="space-y-4">
             <div>
@@ -744,11 +742,6 @@ const App: React.FC = () => {
             >
               Get Started <ArrowRight className="w-5 h-5" />
             </button>
-            <div className="text-center">
-                <button type="button" className="text-sm font-bold text-slate-500 dark:text-slate-400 hover:text-primary transition-colors">
-                    or login with email
-                </button>
-            </div>
           </form>
         </div>
       </div>
@@ -850,9 +843,14 @@ const App: React.FC = () => {
             <span className="text-[10px] font-medium uppercase">Fasting</span>
             {activeFast && <div className="absolute top-2 right-1/4 translate-x-1/2 w-2.5 h-2.5 bg-blue-500 rounded-full animate-pulse border border-white dark:border-slate-900 z-10"></div>}
         </button>
-        <button onClick={() => setActiveTab('shop')} className={`flex flex-col items-center gap-1 w-full h-full justify-center ${activeTab === 'shop' ? 'text-primary' : 'text-slate-500'}`}>
+        <button onClick={() => setActiveTab('shop')} className={`flex flex-col items-center gap-1 w-full h-full justify-center relative ${activeTab === 'shop' ? 'text-primary' : 'text-slate-500'}`}>
             <ShoppingBag className="w-6 h-6" />
             <span className="text-[10px] font-medium uppercase">Shop</span>
+            {cart.length > 0 && (
+                <div className="absolute top-2 right-1/4 translate-x-1/2 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center text-[9px] font-bold text-white border border-white dark:border-slate-900 z-10">
+                    {cart.length}
+                </div>
+            )}
         </button>
         <button onClick={() => setActiveTab('stats')} className={`flex flex-col items-center gap-1 w-full h-full justify-center ${activeTab === 'stats' ? 'text-primary' : 'text-slate-500'}`}>
             <BarChart3 className="w-6 h-6" />

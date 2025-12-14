@@ -1,5 +1,5 @@
 
-const CACHE_NAME = 'zula-fitflow-v4';
+const CACHE_NAME = 'zula-fitflow-v5';
 const urlsToCache = [
   './index.html',
   './manifest.json'

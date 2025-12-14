@@ -175,6 +175,7 @@ export const Shop: React.FC<ShopProps> = ({ cart = [], setCart }) => {
     } else {
       setCart([...cart, { ...item, quantity: qty }]);
     }
+    setView('cart'); // Immediate redirect to cart
   };
 
   const removeFromCart = (id: string) => {
@@ -259,24 +260,24 @@ export const Shop: React.FC<ShopProps> = ({ cart = [], setCart }) => {
                             {selectedProduct.description}
                         </p>
 
-                        <div className="flex justify-between items-center border-t border-slate-200 dark:border-slate-700 pt-6">
-                            <div className="flex flex-col">
+                        <div className="flex flex-col gap-4 border-t border-slate-200 dark:border-slate-700 pt-6">
+                            <div className="flex justify-between items-center">
                                 <span className="text-xs text-slate-500 font-bold uppercase">Price</span>
-                                <span className="text-3xl font-black text-primary">{formatNaira(selectedProduct.price * viewQty)}</span>
+                                <span className="text-2xl font-black text-primary">{formatNaira(selectedProduct.price * viewQty)}</span>
                             </div>
                             
-                            <div className="flex items-center gap-3">
-                                <div className="flex items-center bg-slate-100 dark:bg-slate-800 rounded-lg p-1">
-                                    <button onClick={() => setViewQty(Math.max(1, viewQty - 1))} className="p-2 hover:bg-white dark:hover:bg-slate-700 rounded-md transition-colors"><Minus className="w-4 h-4" /></button>
-                                    <span className="w-8 text-center font-bold">{viewQty}</span>
-                                    <button onClick={() => setViewQty(viewQty + 1)} className="p-2 hover:bg-white dark:hover:bg-slate-700 rounded-md transition-colors"><Plus className="w-4 h-4" /></button>
+                            <div className="flex items-center gap-4">
+                                <div className="flex items-center bg-slate-100 dark:bg-slate-800 rounded-xl p-1">
+                                    <button onClick={() => setViewQty(Math.max(1, viewQty - 1))} className="p-3 hover:bg-white dark:hover:bg-slate-700 rounded-lg transition-colors"><Minus className="w-4 h-4" /></button>
+                                    <span className="w-10 text-center font-bold">{viewQty}</span>
+                                    <button onClick={() => setViewQty(viewQty + 1)} className="p-3 hover:bg-white dark:hover:bg-slate-700 rounded-lg transition-colors"><Plus className="w-4 h-4" /></button>
                                 </div>
 
                                 <button 
                                     onClick={() => { addToCart(selectedProduct, viewQty); }}
-                                    className="bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-4 py-3 rounded-xl font-bold hover:scale-105 transition-transform flex items-center gap-2"
+                                    className="flex-1 bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-4 py-4 rounded-xl font-bold hover:scale-[1.02] transition-transform flex items-center justify-center gap-2 shadow-lg"
                                 >
-                                    <ShoppingBag className="w-5 h-5" /> Add
+                                    <ShoppingBag className="w-5 h-5" /> Add to Bag
                                 </button>
                             </div>
                         </div>
