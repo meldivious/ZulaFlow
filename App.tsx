@@ -55,29 +55,6 @@ export const getTodayDate = () => {
   return localIso.split('T')[0];
 };
 
-const TASKS_POOL = [
-  { title: 'Morning Stretch', category: 'Fitness', duration: 10 },
-  { title: 'Drink Water (500ml)', category: 'Health', duration: 0 },
-  { title: '30 min Jog', category: 'Fitness', duration: 30 },
-  { title: 'Push-ups 3x15', category: 'Fitness', duration: 15 },
-  { title: 'Read 10 pages', category: 'Daily Task', duration: 20 },
-  { title: 'Meditation', category: 'Daily Task', duration: 10 },
-  { title: 'Protein Shake', category: 'Health', duration: 5 },
-  { title: 'Squats 3x20', category: 'Fitness', duration: 10 },
-  { title: 'Plank 2 min', category: 'Fitness', duration: 2 },
-  { title: 'Walk the dog', category: 'Fitness', duration: 20 },
-  { title: 'Jump Rope 5 min', category: 'Fitness', duration: 5 },
-  { title: 'Yoga Flow', category: 'Fitness', duration: 15 },
-  { title: 'No Sugar', category: 'Fasting', duration: 0 },
-  { title: 'Sleep 8 Hours', category: 'Health', duration: 0 },
-  { title: 'Cold Shower', category: 'Health', duration: 5 },
-  { title: 'Journaling', category: 'Daily Task', duration: 10 },
-  { title: 'Lunges 3x12', category: 'Fitness', duration: 8 },
-  { title: 'Cycling 10km', category: 'Fitness', duration: 40 },
-  { title: 'Vitamins', category: 'Health', duration: 0 },
-  { title: 'Foam Rolling', category: 'Fitness', duration: 15 }
-];
-
 const DEFAULT_CATEGORIES = [
   'Fitness',
   'Fasting',
@@ -87,98 +64,75 @@ const DEFAULT_CATEGORIES = [
   'Errands'
 ];
 
-const generateDemoData = (): AppState => {
-  const dateStr = getTodayDate();
-  const now = new Date().toISOString();
+// Helper to generate historical logs
+const generateDemoHistory = (): { history: DayLog[], fastingHistory: FastingSession[] } => {
+  const history: DayLog[] = [];
+  const fastingHistory: FastingSession[] = [];
+  const today = new Date();
   
-  const history: DayLog[] = Array.from({ length: 90 }).map((_, i) => {
-    const d = new Date();
-    d.setDate(d.getDate() - (90 - i));
-    const dStr = new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
-    const steps = Math.floor(Math.random() * 10000) + 8000; 
+  for (let i = 1; i <= 30; i++) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    const dateStr = d.toISOString().split('T')[0];
     
-    const numTasks = Math.floor(Math.random() * 5) + 4; 
-    const dailyTasks: Task[] = [];
-    const shuffled = [...TASKS_POOL].sort(() => 0.5 - Math.random());
+    // Random tasks stats
+    const total = Math.floor(Math.random() * 5) + 3;
+    const completed = Math.floor(Math.random() * (total + 1));
+    const steps = Math.floor(Math.random() * 8000) + 2000;
     
-    for(let j=0; j<numTasks; j++) {
-      const completionDate = new Date(d);
-      const hour = 17 + Math.floor(Math.random() * 5); 
-      const minute = Math.floor(Math.random() * 60);
-      completionDate.setHours(hour, minute);
-
-      dailyTasks.push({
-        id: `hist-${i}-${j}`,
-        title: shuffled[j].title,
-        completed: Math.random() > 0.1, 
-        category: shuffled[j].category,
-        duration: shuffled[j].duration,
-        completedAt: completionDate.toISOString(),
-        createdAt: d.toISOString()
-      });
-    }
-
-    const completedCount = dailyTasks.filter(t => t.completed).length;
-
-    return {
-      date: dStr,
-      completedCount: completedCount,
-      totalCount: numTasks,
+    history.push({
+      date: dateStr,
+      completedCount: completed,
+      totalCount: total,
       steps: steps,
-      tasks: dailyTasks
-    };
-  });
+      tasks: [] // We don't need actual tasks for history stats visualization usually
+    });
 
-  const todayTasks: Task[] = [];
-  const todayShuffled = [...TASKS_POOL].sort(() => 0.5 - Math.random());
+    // Random fasting
+    if (Math.random() > 0.3) {
+        const start = new Date(d);
+        start.setHours(18, 0, 0, 0); // Started at 6PM previous day (simplified for demo)
+        const duration = [16, 18, 20][Math.floor(Math.random() * 3)];
+        const end = new Date(start);
+        end.setHours(start.getHours() + duration);
+        
+        fastingHistory.push({
+            id: Math.random().toString(36).substr(2, 9),
+            startTime: start.toISOString(),
+            endTime: end.toISOString(),
+            targetDuration: duration,
+            plan: duration === 16 ? '16:8' : duration === 18 ? '18:6' : '20:4'
+        });
+    }
+  }
+  return { history: history.reverse(), fastingHistory: fastingHistory.reverse() }; // Sort oldest to newest
+};
+
+// Returns an initial state populated with demo data
+const generateInitialState = (): AppState => {
+  const dateStr = getTodayDate();
+  const { history, fastingHistory } = generateDemoHistory();
   
-  for(let i=0; i<4; i++) {
-     const tTime = new Date();
-     tTime.setMinutes(tTime.getMinutes() - (i * 45)); 
-     todayTasks.push({
-        id: `today-done-${i}`,
-        title: todayShuffled[i].title,
-        completed: true,
-        category: todayShuffled[i].category,
-        duration: todayShuffled[i].duration,
-        completedAt: tTime.toISOString(),
-        createdAt: now
-     });
-  }
-
-  for(let i=4; i<7; i++) {
-     todayTasks.push({
-        id: `today-todo-${i}`,
-        title: todayShuffled[i].title,
-        completed: false,
-        category: todayShuffled[i].category,
-        duration: todayShuffled[i].duration,
-        createdAt: now
-     });
-  }
+  // Demo tasks for today
+  const demoTasks: Task[] = [
+      { id: 't1', title: 'Morning Jog', completed: true, category: 'Fitness', duration: 30, scheduledTime: '07:00', createdAt: new Date().toISOString(), completedAt: new Date().toISOString() },
+      { id: 't2', title: 'Drink Water', completed: false, category: 'Health', duration: 0, scheduledTime: '09:00', createdAt: new Date().toISOString() },
+      { id: 't3', title: 'Team Meeting', completed: false, category: 'Work', duration: 45, scheduledTime: '10:00', createdAt: new Date().toISOString() },
+      { id: 't4', title: 'Read Book', completed: false, category: 'Daily Task', duration: 20, scheduledTime: '20:00', createdAt: new Date().toISOString() }
+  ];
 
   return {
-    tasks: todayTasks,
-    history,
+    tasks: demoTasks, 
+    history: history, 
     lastLogin: dateStr,
     categories: DEFAULT_CATEGORIES,
-    templates: [
-      {
-        id: 't1',
-        name: 'Morning Routine',
-        tasks: [
-            { id: 't1-1', title: 'Drink Water', completed: false, category: 'Health', duration: 1, createdAt: now },
-            { id: 't1-2', title: 'Sun Salutations', completed: false, category: 'Fitness', duration: 10, createdAt: now }
-        ],
-        createdAt: new Date().toISOString()
-      },
-    ],
-    steps: 12543, 
+    templates: [],
+    steps: 0, 
     userName: '',
     theme: 'dark',
     createClicks: 0,
     cart: [],
-    fastingHistory: [],
+    fastingHistory: fastingHistory,
     activeFast: null,
     fastingPresets: [],
     weightHistory: [],
@@ -327,6 +281,18 @@ const App: React.FC = () => {
     tasksRef.current = tasks;
   }, [tasks]);
 
+  // Effect to pause timer if active task becomes completed (via manual check)
+  useEffect(() => {
+    if (activeTaskId) {
+        const activeTask = tasks.find(t => t.id === activeTaskId);
+        if (activeTask && activeTask.completed) {
+            setActiveTaskId(null);
+            setTimerExpiry(null);
+            setTimerPausedRemaining(null);
+        }
+    }
+  }, [tasks, activeTaskId]);
+
   useEffect(() => {
     if (theme === 'dark') {
       document.documentElement.classList.add('dark');
@@ -347,16 +313,17 @@ const App: React.FC = () => {
       try {
         const parsed: AppState = JSON.parse(saved);
         if ((!parsed.tasks || parsed.tasks.length === 0) && (!parsed.history || parsed.history.length === 0)) {
-          dataToLoad = generateDemoData();
-          dataToLoad.userName = parsed.userName || ''; 
+           // If storage is essentially empty/corrupt, use clean state
+           dataToLoad = generateInitialState();
+           dataToLoad.userName = parsed.userName || ''; 
         } else {
           dataToLoad = parsed;
         }
       } catch (e) {
-        dataToLoad = generateDemoData();
+        dataToLoad = generateInitialState();
       }
     } else {
-      dataToLoad = generateDemoData();
+      dataToLoad = generateInitialState();
     }
 
     if (dataToLoad) {
@@ -374,7 +341,7 @@ const App: React.FC = () => {
         } else {
           setHistory(dataToLoad.history || []);
         }
-        // Rollover incomplete tasks
+        // Rollover incomplete tasks - Keep incomplete ones, discard completed
         const uncompleted = (dataToLoad.tasks || []).filter(t => !t.completed);
         setTasks(uncompleted);
         setSteps(0); 
@@ -474,33 +441,18 @@ const App: React.FC = () => {
   }, [showCelebration]);
 
   const handleTaskComplete = (taskId: string) => {
-    const currentTasksList = tasksRef.current;
-    const taskIndex = currentTasksList.findIndex(t => t.id === taskId);
-    const todayStr = getTodayDate();
-    
-    const nextTask = currentTasksList.find((t, i) => 
-        i > taskIndex && 
-        !t.completed && 
-        (!t.scheduledDate || t.scheduledDate <= todayStr)
-    );
-
+    // This is triggered by Timer Expiry
     setTasks(prev => prev.map(t => 
         t.id === taskId 
         ? { ...t, completed: true, completedAt: new Date().toISOString() } 
         : t
     ));
 
-    if (nextTask) {
-        setActiveTaskId(nextTask.id);
-        const durationMs = (nextTask.duration || 5) * 60 * 1000;
-        setTimerExpiry(Date.now() + durationMs);
-        setTimerPausedRemaining(null);
-    } else {
-        setActiveTaskId(null);
-        setTimerExpiry(null);
-        setTimerPausedRemaining(null);
-        setShowCelebration(true);
-    }
+    // Stop timer
+    setActiveTaskId(null);
+    setTimerExpiry(null);
+    setTimerPausedRemaining(null);
+    setShowCelebration(true);
   };
 
   const handleManualTaskComplete = () => {
@@ -676,6 +628,14 @@ const App: React.FC = () => {
     return `${diffDays} days ago`;
   };
 
+  const formatHeaderDate = (dateStr: string) => {
+    const d = new Date(dateStr);
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = d.toLocaleString('default', { month: 'short' });
+    const year = String(d.getFullYear()).slice(-2);
+    return `${day}-${month}-${year}`;
+  };
+
   const todayLog: DayLog = {
     date: currentDate,
     completedCount: tasks.filter(t => t.completed).length,
@@ -766,7 +726,7 @@ const App: React.FC = () => {
             <div className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center">
                 <span className="text-sm font-bold text-slate-900 dark:text-white tracking-wide">{getDateLabel(viewDate)}</span>
                 {!isToday && (
-                  <span className="text-[10px] text-slate-500">{viewDate.split('-').slice(1).join('/')}</span>
+                  <span className="text-[10px] text-slate-500">{formatHeaderDate(viewDate)}</span>
                 )}
             </div>
           )}
