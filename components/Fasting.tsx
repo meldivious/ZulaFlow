@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FastingSession, FastingPlanType, WeightEntry, NoteEntry, FastingPreset } from '../types';
 import { Square, Plus, Droplets, Activity, Zap, Clock, Save, Trash2, Repeat, Calendar, Play, Scale, ScrollText, X, Lightbulb, Check } from 'lucide-react';
 
@@ -31,85 +31,6 @@ const FASTING_TIPS = [
     { title: "Break Gently", desc: "Start with a small meal (protein/fats) to avoid insulin spikes when ending your fast." }
 ];
 
-const CalendarView = ({ history }: { history: FastingSession[] }) => {
-    const today = new Date();
-    const [months, setMonths] = useState<Date[]>([]);
-    const scrollRef = useRef<HTMLDivElement>(null);
-    
-    useEffect(() => {
-        // Last month and Current month
-        const m1 = new Date(today.getFullYear(), today.getMonth(), 1);
-        const m2 = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-        setMonths([m2, m1]);
-    }, []);
-
-    useEffect(() => {
-        if (scrollRef.current) {
-            scrollRef.current.scrollLeft = scrollRef.current.scrollWidth;
-        }
-    }, [months]);
-
-    const hasFastOnDate = (d: Date) => {
-        const dStr = d.toISOString().split('T')[0];
-        return history.some(f => {
-             const fStr = new Date(f.startTime).toISOString().split('T')[0];
-             return fStr === dStr;
-        });
-    };
-
-    const renderMonth = (monthStart: Date) => {
-        const year = monthStart.getFullYear();
-        const month = monthStart.getMonth();
-        const daysInMonth = new Date(year, month + 1, 0).getDate();
-        const firstDay = new Date(year, month, 1).getDay(); // 0-6
-        const monthName = monthStart.toLocaleString('default', { month: 'long', year: 'numeric' });
-
-        const days = [];
-        // Empty slots
-        for(let i=0; i<firstDay; i++) {
-            days.push(<div key={`empty-${i}`} className="h-8"></div>);
-        }
-        // Days
-        for(let i=1; i<=daysInMonth; i++) {
-            const d = new Date(year, month, i);
-            const isToday = d.toDateString() === new Date().toDateString();
-            const hasFast = hasFastOnDate(d);
-            
-            days.push(
-                <div key={i} className="h-8 flex items-center justify-center relative">
-                    {hasFast && <div className="absolute inset-1 bg-indigo-100 dark:bg-indigo-900/50 rounded-full"></div>}
-                    <span className={`relative z-10 text-xs font-bold ${isToday ? 'text-primary' : 'text-slate-700 dark:text-slate-300'}`}>{i}</span>
-                    {hasFast && <div className="absolute bottom-1 w-1 h-1 bg-indigo-500 rounded-full z-10"></div>}
-                </div>
-            );
-        }
-
-        return (
-            <div className="w-full flex-shrink-0 px-4 snap-center">
-                <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-4 capitalize sticky left-0">{monthName}</h4>
-                <div className="grid grid-cols-7 gap-1 text-center mb-1">
-                    {['S','M','T','W','T','F','S'].map(d => <span key={d} className="text-[10px] text-slate-400 font-bold">{d}</span>)}
-                </div>
-                <div className="grid grid-cols-7 gap-1 text-center">
-                    {days}
-                </div>
-            </div>
-        );
-    };
-
-    return (
-        <div className="bg-white dark:bg-card py-4 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
-             <div ref={scrollRef} className="flex overflow-x-auto snap-x no-scrollbar pb-2 scroll-smooth">
-                {months.map((m, i) => <React.Fragment key={i}>{renderMonth(m)}</React.Fragment>)}
-             </div>
-             <div className="flex justify-center gap-1 mt-2">
-                 <div className="w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-slate-600"></div>
-                 <div className="w-1.5 h-1.5 rounded-full bg-indigo-500"></div>
-             </div>
-        </div>
-    );
-};
-
 export const Fasting: React.FC<FastingProps> = ({
   activeFast,
   setActiveFast,
@@ -131,7 +52,7 @@ export const Fasting: React.FC<FastingProps> = ({
   const [showCustom, setShowCustom] = useState(false);
   const [customName, setCustomName] = useState('');
   const [customHours, setCustomHours] = useState(16);
-  const [scheduleTime, setScheduleTime] = useState(''); 
+  const [scheduleTime, setScheduleTime] = useState(''); // ISO string or empty for now
   
   // Electrolyte State
   const [showElectrolyteForm, setShowElectrolyteForm] = useState(false);
@@ -159,7 +80,7 @@ export const Fasting: React.FC<FastingProps> = ({
         
         // If scheduled in future
         if (activeFast.scheduledStartTime && startTime > now) {
-            setElapsed(-(startTime - now) / 1000); 
+            setElapsed(-(startTime - now) / 1000); // Negative elapsed means waiting
         } else {
             setElapsed(Math.floor((now - startTime) / 1000));
         }
@@ -512,9 +433,40 @@ export const Fasting: React.FC<FastingProps> = ({
                   </div>
               </div>
 
-              {/* Calendar View */}
-              <CalendarView history={fastingHistory} />
-
+              <div className="bg-white dark:bg-card rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+                 <div className="p-4 border-b border-slate-100 dark:border-slate-700/50 bg-slate-50 dark:bg-slate-900/20">
+                     <h3 className="font-bold text-sm">History</h3>
+                 </div>
+                 <div className="max-h-60 overflow-y-auto">
+                     {fastingHistory.length === 0 ? (
+                         <p className="text-center text-slate-400 text-xs py-6">No completed fasts yet.</p>
+                     ) : (
+                         fastingHistory.map((fast, i) => {
+                             const duration = fast.endTime 
+                                ? ((new Date(fast.endTime).getTime() - new Date(fast.startTime).getTime()) / (1000 * 60 * 60)).toFixed(1) 
+                                : 0;
+                             
+                             return (
+                                <div key={i} className="flex justify-between items-center p-4 border-b border-slate-100 dark:border-slate-700/50 last:border-0 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                                    <div>
+                                        <p className="font-bold text-sm text-slate-900 dark:text-white">{fast.name || fast.plan}</p>
+                                        <p className="text-xs text-slate-500">
+                                            {new Date(fast.startTime).toLocaleDateString()} • {duration} hours
+                                        </p>
+                                    </div>
+                                    <button 
+                                        onClick={() => startFast(fast.plan, fast.targetDuration, fast.name)}
+                                        className="text-primary hover:bg-primary/10 p-2 rounded-lg"
+                                        title="Repeat Fast"
+                                    >
+                                        <Repeat className="w-4 h-4" />
+                                    </button>
+                                </div>
+                             );
+                         })
+                     )}
+                 </div>
+              </div>
            </div>
         )}
 
